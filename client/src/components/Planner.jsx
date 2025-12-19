@@ -14,7 +14,7 @@ function Planner() {
   // Fetch tasks whenever date changes
   useEffect(() => {
     axios
-      .get(`http://localhost:3001/api/planner/tasks`, {
+      .get(`http://localhost:3002/api/planner/tasks`, {
         params: { date: date.toDateString(), userId },
       })
       .then((res) => setTasks(res.data))
@@ -24,7 +24,7 @@ function Planner() {
   const addTask = () => {
     if (taskInput.trim() === "") return;
     axios
-      .post("http://localhost:3001/api/planner/tasks", {
+      .post("http://localhost:3002/api/planner/tasks", {
         userId,
         date: date.toDateString(),
         text: taskInput,
@@ -38,7 +38,7 @@ function Planner() {
 
   const toggleTask = (taskId) => {
     axios
-      .patch(`http://localhost:3001/api/planner/tasks/${taskId}`)
+      .patch(`http://localhost:3002/api/planner/tasks/${taskId}`)
       .then((res) => {
         const updatedTasks = tasks.map((t) =>
           t._id === taskId ? res.data : t
