@@ -1,15 +1,26 @@
 import express from "express";
 import { getFlashcards, createFlashcards, updateFlashcards, deleteFlashcards} from "../controllers/flashcardController.js";
-const flashcardReviewRouter = express.Router();
+
+import {
+    getProgressSummary,
+    getCategoryStats,
+    getDifficultyStats,
+    getCategoryDifficultyStats,
+    getFlashcardProgress,
+    getFlashcardProgressDetailed,
+} from "../controllers/flashcardProgController.js";
+
+import { reviewSession } from "../controllers/flashcardReviewController.js";
+
+const flashcardRouter = express.Router();
 
 
 // /api/flashcards common route
-flashcardReviewRouter.get('/', getFlashcards);
-flashcardReviewRouter.post('/', createFlashcards);
-flashcardReviewRouter.put('/:id', updateFlashcards);
-flashcardReviewRouter.delete('/:id', deleteFlashcards);
-
-flashcardReviewRouter.get("/categories", async (req, res) => {
+flashcardRouter.get('/', getFlashcards);
+flashcardRouter.post('/', createFlashcards);
+flashcardRouter.put('/:id', updateFlashcards);
+flashcardRouter.delete('/:id', deleteFlashcards);
+flashcardRouter.get("/categories", async (req, res) => {
     try {
         const categories = await Flashcard.distinct("category");
         res.json({ success: true, categories });
@@ -18,4 +29,13 @@ flashcardReviewRouter.get("/categories", async (req, res) => {
     }
 });
 
-export default flashcardReviewRouter;
+
+flashcardRouter.get("/progress/summary", getProgressSummary);
+flashcardRouter.get("/progress/category", getCategoryStats);
+flashcardRouter.get("/progress/difficulty", getDifficultyStats);
+flashcardRouter.get("/progress/category-difficulty", getCategoryDifficultyStats);
+flashcardRouter.get("/progress/:id/progress", getFlashcardProgress);
+flashcardRouter.get("/progress/:id/progress/detailed", getFlashcardProgressDetailed);
+flashcardRouter.post("/review", reviewSession);
+
+export default flashcardRouter;
