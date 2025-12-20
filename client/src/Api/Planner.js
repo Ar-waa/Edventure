@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:3002/api/planner";
+const BASE_URL = "http://localhost:3030/api/planner";
 
 // get tasks for a date
 export const fetchTasksByDate = (date, userId) => {
