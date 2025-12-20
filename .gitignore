@@ -1,0 +1,17 @@
+client/node_modules/
+server/node_modules/
+client/dist/
+build/
+client/.vite/
+.log
+npm-debug.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+Thumbs.db
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pytest_cache/
