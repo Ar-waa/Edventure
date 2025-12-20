@@ -1,25 +1,53 @@
 import axios from "axios";
 
-const REVIEW_API = "http://localhost:5000/api/review";
 const FLASHCARD_API = "http://localhost:5000/api/flashcards";
 
-export const getReviewFlashcards = async (filters = {}) => {
-    const res = await axios.get(`${REVIEW_API}/start`, { params: filters });
-    return res.data;
-};
+// Fetch a random flashcard with optional category/difficulty filters
+export const getReviewFlashcards = async (filters = {}, flashcardId = null, isCorrect = null) => {
+    try {
+        const payload = flashcardId ? { flashcardId, isCorrect } : filters;
+        const res = await axios.post(`${FLASHCARD_API}/review`, payload);
+        return res.data;
+    } catch (err) {
+        console.error("Error fetching/submitting review:", err);
+        return { success: false, message: err.message };
+    }
+    };
 
-export const submitReviewAnswer = async (data) => {
-    const res = await axios.post(`${REVIEW_API}/answer`, data);
-    return res.data;
-};
+    // Fetch aggregated stats
+    export const getReviewStats = async () => {
+    try {
+        const res = await axios.get(`${FLASHCARD_API}/progress/summary`);
+        return res.data;
+    } catch (err) {
+        console.error("Error fetching stats:", err);
+        return { success: false, message: err.message };
+    }
+    };
 
+    // Reset session (frontend-only reset, backend optional)
 export const resetReviewSession = async () => {
-    const res = await axios.post(`${REVIEW_API}/reset`);
-    return res.data;
+    return { success: true };
 };
 
-// New: fetch all categories
-export const getCategories = async () => {
-    const res = await axios.get(`${FLASHCARD_API}/categories`);
-    return res.data;
+    // Fetch per-card detailed stats
+    export const getFlashcardDetailedStats = async (id) => {
+    try {
+        const res = await axios.get(`${FLASHCARD_API}/progress/${id}/progress/detailed`);
+        return res.data;
+    } catch (err) {
+        console.error("Error fetching detailed stats:", err);
+        return { success: false, message: err.message };
+    }
+    };
+
+    // Fetch all categories
+    export const getCategories = async () => {
+    try {
+        const res = await axios.get(`${FLASHCARD_API}/categories`);
+        return res.data;
+    } catch (err) {
+        console.error("Error fetching categories:", err);
+        return { success: false, message: err.message };
+    }
 };
