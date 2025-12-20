@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const plannerSchema = new mongoose.Schema({
   userId: { type: String, required: true }, // you can extend this if you add authentication
@@ -9,5 +9,5 @@ const plannerSchema = new mongoose.Schema({
 
 const Planner = mongoose.model("Planner", plannerSchema);
 
-module.exports = Planner;
+export default Planner;  
 

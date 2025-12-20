@@ -1,4 +1,5 @@
-const Planner = require("../models/Planner");
+
+import Planner from "../models/Planner.js";
 
 // Get tasks for a specific date
 const getTasksByDate = async (req, res) => {
@@ -42,5 +43,5 @@ const toggleTask = async (req, res) => {
   }
 };
 
-module.exports = { getTasksByDate, addTask, toggleTask };
+export { getTasksByDate, addTask, toggleTask };
 

@@ -7,7 +7,7 @@ import rateLimit from "express-rate-limit";
 import cors from "cors"
 import session from "express-session";
 
-const plannerRouter = require("./routers/plannerRouter");
+import plannerRouter from "./routers/plannerRouter.js"; 
 import flashcardRouter from "./routers/flashcardRouter.js";
 
 
