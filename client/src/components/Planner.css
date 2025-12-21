@@ -127,6 +127,61 @@
     color: #555;
   }
   
+  .task-tag {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-right: 8px;
+    color: white;
+  }
+  
+  .task-tag.exam {
+    background-color: #e74c3c;
+  }
+  
+  .task-tag.assignment {
+    background-color: #3498db;
+  }
+  
+  .task-tag.quiz {
+    background-color: #2ecc71;
+  }
+  
+  .task-tag.homework {
+    background-color: #9b59b6;
+  }
+
+  .calendar-dots {
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+  }
+  
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin: 0 2px;
+  }
+  
+  .dot.exam {
+    background-color: #e74c3c;
+  }
+  
+  .dot.assignment {
+    background-color: #3498db;
+  }
+  
+  .dot.quiz {
+    background-color: #2ecc71;
+  }
+  
+  .dot.homework {
+    background-color: #9b59b6;
+  }
+  
+  
   
   
   
