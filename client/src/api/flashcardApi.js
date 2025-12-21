@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/flashcards";
+const API_URL = "http://localhost:3030/api/flashcards";
 
 export const getFlashcards = async (filters = {}, page = 1, limit = 5) => {
     try {

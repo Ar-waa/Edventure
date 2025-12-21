@@ -1,11 +1,13 @@
-const express = require("express");
+import express from "express";
+
 const router = express.Router();
-const { getTasksByDate, addTask, toggleTask } = require("../controllers/plannerController");
+
+import { getTasksByDate, addTask, toggleTask } from "../controllers/plannerController.js";
 
 // Routes
 router.get("/tasks", getTasksByDate); // ?date=YYYY-MM-DD&userId=123
 router.post("/tasks", addTask);
 router.patch("/tasks/:taskId", toggleTask);
 
-module.exports = router;
+export default router;  
 
