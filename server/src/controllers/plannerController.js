@@ -15,16 +15,29 @@ const getTasksByDate = async (req, res) => {
 
 // Add a new task
 const addTask = async (req, res) => {
-  const { userId, date, text } = req.body;
-
   try {
-    const task = new Planner({ userId, date, text });
+    console.log("REQ BODY:", req.body);
+
+    const { userId, date, text, type } = req.body;
+
+    const task = new Planner({
+      userId: String(userId),
+      date: String(date),
+      text: text.trim(),
+      type,
+    });
+
     await task.save();
     res.status(201).json(task);
+
   } catch (err) {
-    res.status(500).json({ message: "Error adding task", error: err });
+    console.error("ADD TASK ERROR:", err);
+    res.status(500).json({
+      message: err.message,
+    });
   }
 };
+
 
 // Toggle task completion
 const toggleTask = async (req, res) => {
@@ -43,5 +56,16 @@ const toggleTask = async (req, res) => {
   }
 };
 
-export { getTasksByDate, addTask, toggleTask };
+const getAllTasks = async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const tasks = await Planner.find({ userId });
+    res.status(200).json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching all tasks", error: err });
+  }
+};
+
+export { getTasksByDate, getAllTasks, addTask, toggleTask };
 
