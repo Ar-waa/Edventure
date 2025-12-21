@@ -18,6 +18,11 @@ function Planner() {
 
   const [allTasks, setAllTasks] = useState([]);
   const [taskMap, setTaskMap] = useState({}); // map of date -> tasks
+  const [weeklySummary, setWeeklySummary] = useState({
+    finished: 0,
+    unfinished: 0,
+    total: 0,
+  });
 
   const userId = "123";
 
@@ -40,6 +45,27 @@ function Planner() {
       })
       .catch((err) => console.error(err));
   }, []);
+
+  // Compute weekly summary
+  useEffect(() => {
+    if (allTasks.length > 0) {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+      const lastWeekTasks = allTasks.filter(
+        (task) => new Date(task.date) >= oneWeekAgo
+      );
+
+      const finished = lastWeekTasks.filter((t) => t.completed).length;
+      const unfinished = lastWeekTasks.filter((t) => !t.completed).length;
+
+      setWeeklySummary({
+        finished,
+        unfinished,
+        total: lastWeekTasks.length,
+      });
+    }
+  }, [allTasks]);
 
   // Fetch tasks for selected date
   useEffect(() => {
@@ -104,8 +130,20 @@ function Planner() {
 
   return (
     <div className="planner-container">
-      <h1 className="planner-title">Planner Page</h1>
+      {/* Header with title + dashboard icon */}
+      <div className="planner-header">
+        <h1 className="planner-title"> Calendar Planner</h1>
+        <div className="summary-icon">
+          📜
+          <div className="tooltip">
+            <p>Finished tasks: {weeklySummary.finished}</p>
+            <p>Unfinished tasks: {weeklySummary.unfinished}</p>
+            <p>Total tasks: {weeklySummary.total}</p>
+          </div>
+        </div>
+      </div>
 
+      {/* Calendar */}
       <Calendar
         onChange={setDate}
         value={date}
