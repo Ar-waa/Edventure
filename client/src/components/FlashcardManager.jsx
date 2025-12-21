@@ -5,9 +5,18 @@ import {
     createFlashcard,
     updateFlashcard,
     deleteFlashcard,
+    generateFlashcards,
 } from "../api/flashcardApi";
 
 export default function FlashcardManager() {
+    const [showAIPanel, setShowAIPanel] = useState(false);
+    const [aiText, setAiText] = useState("");
+    const [aiFiles, setAiFiles] = useState([]);
+    <FileUploader onFiles={(acceptedFiles) => setAiFiles(acceptedAiFiles)} />
+    const [aiFlashcards, setAiFlashcards] = useState([]);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState("");
+
     const [flashcards, setFlashcards] = useState([]);
     const [form, setForm] = useState({
         question: "",
@@ -83,20 +92,61 @@ export default function FlashcardManager() {
 
     const resetFilters = () => setFilters({search: "", category: "", difficulty: "" });
 
+  /* ---------------- AI HANDLERS ---------------- */
+    const handleAIGenerate = async () => {
+        setAiLoading(true);
+        setAiError("");
+
+        const res = await generateFlashcards({
+        text: aiText,
+        files: aiFiles,
+        });
+
+        if (!res.success) {
+        setAiError(res.message || "AI generation failed");
+        setAiLoading(false);
+        return;
+        }
+
+        setAiFlashcards(res.flashcards);
+        setAiLoading(false);
+    };
+
+    const handleSaveAICards = async () => {
+        for (const card of aiFlashcards) {
+        await createFlashcard(card);
+        }
+
+        setAiFlashcards([]);
+        setAiText("");
+        setAiFiles([]);
+        setShowAIPanel(false);
+        fetchFlashcardsHandler();
+    };
+
+    const handleCancelAI = () => {
+        setShowAIPanel(false);
+        setAiFlashcards([]);
+        setAiText("");
+        setAiFiles([]);
+        setAiError("");
+    };
+
+    function FileUploader({ onFiles }) {
+    const { getRootProps, getInputProps } = useDropzone({
+        onDrop: onFiles,
+    });
+
+    return (
+        <div {...getRootProps()} style={{ border: "2px dashed #aaa", padding: 20 }}>
+        <input {...getInputProps()} />
+        <p>Drag & drop files here, or click to select</p>
+        </div>
+    );
+}
+
 
     // ------------------- FETCHING -------------------
-    // const fetchFlashcards = async (appliedFilters = filters) => {
-    //     try {
-    //         const res = await getFlashcards(appliedFilters, pagination.page, pagination.limit);
-    //         if (res.success) {
-    //             setFlashcards(res.data);
-    //             setPagination(prev => ({ ...prev, totalPages: res.totalPages }));
-    //         }
-    //     } catch (err) {
-    //         console.error("Error fetching flashcards:", err);
-    //     }
-    // };
-
     const fetchFlashcardsHandler = async () => {
         const res = await getFlashcards(filters, pagination.page, pagination.limit);
         if (res.success) {
@@ -140,7 +190,114 @@ export default function FlashcardManager() {
                 </select>
                 <button onClick={handleAddOrUpdate}>{editingId ? "Update" : "Add"}</button>
                 {editingId && <button onClick={cancelEditing}>Cancel</button>}
+                <button
+                style={{ marginLeft: 10, background: "#333" }}
+                onClick={() => setShowAIPanel(prev => !prev)}
+                >
+                Generate Flashcards (AI)
+            </button>
             </div>
+
+      {/* AI PANEL */}
+        {showAIPanel && (
+            <div
+            style={{
+                padding: 15,
+                border: "1px solid #aaa",
+                borderRadius: 8,
+                background: "#f3f3ff",
+                marginBottom: 20,
+            }}
+            >
+            <h3>AI Flashcard Generator</h3>
+
+            <textarea
+                placeholder="Paste notes (optional)"
+                value={aiText}
+                onChange={(e) => setAiText(e.target.value)}
+                style={{ width: "100%", minHeight: 80 }}
+            />
+
+            <input
+                type="file"
+                multiple
+                accept=".pdf,.txt,image/*"
+                onChange={(e) => setAiFiles([...e.target.files])}
+                style={{ marginTop: 10 }}
+            />
+
+            <div style={{ marginTop: 10 }}>
+                <button onClick={handleAIGenerate} disabled={aiLoading}>
+                {aiLoading ? "Generating..." : "Generate Preview"}
+                </button>
+                <button
+                style={{ marginLeft: 10, background: "#999" }}
+                onClick={handleCancelAI}
+                >
+                Cancel
+                </button>
+            </div>
+
+            {aiError && <p style={{ color: "red" }}>{aiError}</p>}
+
+            {/* AI PREVIEW */}
+            {aiFlashcards.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                <h3>Edit AI Flashcards</h3>
+
+                {aiFlashcards.map((fc, idx) => (
+                    <div
+                    key={idx}
+                    style={{
+                        border: "1px solid #ddd",
+                        padding: 10,
+                        marginBottom: 10,
+                    }}
+                    >
+                    <input
+                        value={fc.question}
+                        onChange={(e) => {
+                        const copy = [...aiFlashcards];
+                        copy[idx].question = e.target.value;
+                        setAiFlashcards(copy);
+                        }}
+                    />
+                    <input
+                        value={fc.answer}
+                        onChange={(e) => {
+                        const copy = [...aiFlashcards];
+                        copy[idx].answer = e.target.value;
+                        setAiFlashcards(copy);
+                        }}
+                    />
+                    <input
+                        value={fc.category}
+                        onChange={(e) => {
+                        const copy = [...aiFlashcards];
+                        copy[idx].category = e.target.value;
+                        setAiFlashcards(copy);
+                        }}
+                    />
+                    <select
+                        value={fc.difficulty}
+                        onChange={(e) => {
+                        const copy = [...aiFlashcards];
+                        copy[idx].difficulty = e.target.value;
+                        setAiFlashcards(copy);
+                        }}
+                    >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                    </div>
+                ))}
+
+                <button onClick={handleSaveAICards}>Save All</button>
+                </div>
+            )}
+            </div>
+        )}
 
             {/* Flashcards */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
