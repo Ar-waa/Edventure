@@ -1,3 +1,4 @@
+
 import { serverPort, mongodbURL } from './secret.js';
 import mongoose from "mongoose";
 import express from "express";
@@ -7,6 +8,7 @@ import rateLimit from "express-rate-limit";
 import cors from "cors"
 import session from "express-session";
 
+import profileRouter from "./routes/profileRouter";
 import plannerRouter from "./routers/plannerRouter.js"; 
 import flashcardRouter from "./routers/flashcardRouter.js";
 
@@ -26,6 +28,7 @@ app.use(rateLimiter);
 
 app.use(
     session({
+        name: 'sessionId',
         secret: "flashcardsecret",
         resave: false,
         saveUninitialized: true,
@@ -33,11 +36,17 @@ app.use(
     })
 );
 
+// Middleware to make user available to all routes
+app.use((req, res, next) => {
+  // req.user will be set by the login route
+  next();
+});
 
 // app.use("/api/review", router);
 app.use('/api/flashcards', flashcardRouter);
 app.use("/api/planner", plannerRouter);
-
+app.use("/api/user", userRouter);
+app.use("/api/profile", profileRouter);
 
 //client error handling
 app.use((req,res,next) => {
