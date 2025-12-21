@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import FlashcardsPage from "./pages/FlashcardsPage";
 import PlannerPage from "./pages/PlannerPage";
+import Milestones from "./pages/milestonePage";
+
 
 function App() {
   return (
@@ -18,6 +20,7 @@ function App() {
       <Routes>
         <Route path="/" element={<FlashcardsPage />} />
         <Route path="/planner" element={<PlannerPage />} />
+        <Route path="/milestones" element={<Milestones />} />
       </Routes>
     </Router>
   );

@@ -9,6 +9,7 @@ import session from "express-session";
 
 import plannerRouter from "./routers/plannerRouter.js"; 
 import flashcardRouter from "./routers/flashcardRouter.js";
+import milestoneRouter from "./routers/milestoneRouter.js";
 
 
 const app = express();
@@ -37,6 +38,7 @@ app.use(
 // app.use("/api/review", router);
 app.use('/api/flashcards', flashcardRouter);
 app.use("/api/planner", plannerRouter);
+app.use("/api/milestones", milestoneRouter);
 
 
 //client error handling
