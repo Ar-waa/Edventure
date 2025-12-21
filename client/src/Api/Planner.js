@@ -18,3 +18,9 @@ export const createTask = (taskData) => {
 export const toggleTaskStatus = (taskId) => {
   return axios.patch(`${BASE_URL}/tasks/${taskId}`);
 };
+
+export const fetchAllTasks = (userId) => {
+  return axios.get(`${BASE_URL}/tasks/all`, {
+    params: { userId },
+  });
+};
