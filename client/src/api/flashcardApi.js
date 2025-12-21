@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const API_URL = "http://localhost:3030/api/flashcards";
+// const FLASHCARD_API = "/api/flashcards";
 
 export const getFlashcards = async (filters = {}, page = 1, limit = 5) => {
     try {
@@ -33,4 +34,23 @@ export const updateFlashcard = async (id, updatedData) => {
 export const deleteFlashcard = async (id) => {
     const res = await axios.delete(`${API_URL}/${id}`);
     return res.data;
+};
+
+export const generateFlashcards = async ({ files, text }) => {
+    try {
+        const formData = new FormData();
+        if (text) formData.append("textInput", text);
+        if (files) {
+        for (const file of files) formData.append("files", file);
+        }
+
+        const res = await axios.post(`${API_URL}/generate`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        return res.data;
+    } catch (err) {
+        console.error("Error generating flashcards:", err);
+        return { success: false, message: err.response?.data?.message || err.message };
+    }
 };

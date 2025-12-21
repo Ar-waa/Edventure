@@ -1,5 +1,7 @@
 import express from "express";
-import { getFlashcards, createFlashcards, updateFlashcards, deleteFlashcards} from "../controllers/flashcardController.js";
+import multer from "multer";
+import Flashcard from "../models/flashcardModel.js";
+import { getFlashcards, createFlashcards, updateFlashcards, deleteFlashcards, generateFlashcardsFromAI} from "../controllers/flashcardController.js";
 
 import {
     getProgressSummary,
@@ -14,12 +16,16 @@ import { reviewSession } from "../controllers/flashcardReviewController.js";
 
 const flashcardRouter = express.Router();
 
+// Use multer memory storage to avoid saving files
+const upload = multer({ storage: multer.memoryStorage() });
 
 // /api/flashcards common route
 flashcardRouter.get('/', getFlashcards);
 flashcardRouter.post('/', createFlashcards);
 flashcardRouter.put('/:id', updateFlashcards);
 flashcardRouter.delete('/:id', deleteFlashcards);
+flashcardRouter.post("/generate", upload.array("files"), generateFlashcardsFromAI);
+
 flashcardRouter.get("/categories", async (req, res) => {
     try {
         const categories = await Flashcard.distinct("category");
