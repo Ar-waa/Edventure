@@ -17,7 +17,7 @@ function Planner() {
   const [taskType, setTaskType] = useState("exam");
 
   const [allTasks, setAllTasks] = useState([]);
-  const [taskMap, setTaskMap] = useState({}); // map of date -> tasks
+  const [taskMap, setTaskMap] = useState({});
   const [weeklySummary, setWeeklySummary] = useState({
     finished: 0,
     unfinished: 0,
@@ -25,17 +25,14 @@ function Planner() {
   });
 
   const userId = "123";
-
-  // Format selected date as YYYY-MM-DD
   const formattedDate = date.toISOString().split("T")[0];
+  const [sparkles, setSparkles] = useState([]); // Updated state
 
   // Fetch all tasks once
   useEffect(() => {
     fetchAllTasks(userId)
       .then((res) => {
         setAllTasks(res.data);
-
-        // Build task map for faster lookup per date
         const map = {};
         res.data.forEach((task) => {
           if (!map[task.date]) map[task.date] = [];
@@ -46,7 +43,7 @@ function Planner() {
       .catch((err) => console.error(err));
   }, []);
 
-  // Compute weekly summary
+  // Weekly summary
   useEffect(() => {
     if (allTasks.length > 0) {
       const oneWeekAgo = new Date();
@@ -74,7 +71,7 @@ function Planner() {
       .catch((err) => console.error(err));
   }, [formattedDate]);
 
-  // Add new task
+  // Add task
   const addTask = () => {
     if (!taskInput.trim()) return;
 
@@ -90,8 +87,6 @@ function Planner() {
         const newTask = res.data;
         setTasks((prev) => [...prev, newTask]);
         setTaskInput("");
-
-        // Update allTasks and taskMap
         setAllTasks((prev) => [...prev, newTask]);
         setTaskMap((prev) => {
           const updated = { ...prev };
@@ -108,14 +103,25 @@ function Planner() {
     toggleTaskStatus(taskId)
       .then((res) => {
         const updatedTask = res.data;
+
+        if (updatedTask.completed) {
+          const sparkleId = `${taskId}-${Date.now()}`;
+          setSparkles((prev) => [...prev, { taskId, sparkleId }]);
+
+          // Remove sparkle after animation
+          setTimeout(() => {
+            setSparkles((prev) =>
+              prev.filter((s) => s.sparkleId !== sparkleId)
+            );
+          }, 800);
+        }
+
         setTasks((prev) =>
           prev.map((t) => (t._id === taskId ? updatedTask : t))
         );
-
         setAllTasks((prev) =>
           prev.map((t) => (t._id === taskId ? updatedTask : t))
         );
-
         setTaskMap((prev) => {
           const updated = { ...prev };
           const dayTasks = updated[updatedTask.date].map((t) =>
@@ -128,81 +134,101 @@ function Planner() {
       .catch((err) => console.error(err));
   };
 
+  // Task type emojis
+  const taskEmoji = {
+    exam: "📚",
+    assignment: "📝",
+    quiz: "🧪",
+    homework: "🏠",
+  };
+
   return (
     <div className="planner-container">
-      {/* Header with title + dashboard icon */}
-      <div className="planner-header">
-        <h1 className="planner-title"> Calendar Planner</h1>
-        <div className="summary-icon">
-          📜
-          <div className="tooltip">
-            <p>Finished tasks: {weeklySummary.finished}</p>
-            <p>Unfinished tasks: {weeklySummary.unfinished}</p>
-            <p>Total tasks: {weeklySummary.total}</p>
-          </div>
-        </div>
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h2>Edventure Stats</h2>
+        <div className="badge">🏆 Weekly XP</div>
+        <div className="badge">⭐ Finished: {weeklySummary.finished}</div>
+        <div className="badge">⚡ Unfinished: {weeklySummary.unfinished}</div>
+        <div className="badge">🎖 Total Tasks: {weeklySummary.total}</div>
       </div>
 
-      {/* Calendar */}
-      <Calendar
-        onChange={setDate}
-        value={date}
-        className="planner-calendar"
-        tileContent={({ date }) => {
-          const dayStr = date.toISOString().split("T")[0];
-          const dayTasks = taskMap[dayStr] || [];
+      {/* Main Calendar */}
+      <div className="calendar-section">
+        <h1 className="planner-title">🪐 Edventure Calendar</h1>
 
-          return (
-            <div className="calendar-dots">
-              {dayTasks.map((task, idx) => (
-                <span key={idx} className={`dot ${task.type}`}></span>
-              ))}
-            </div>
-          );
-        }}
-      />
+        <Calendar
+          onChange={setDate}
+          value={date}
+          className="planner-calendar"
+          tileContent={({ date }) => {
+            const dayStr = date.toISOString().split("T")[0];
+            const dayTasks = taskMap[dayStr] || [];
 
-      <p className="selected-date">Selected date: {formattedDate}</p>
+            return (
+              <div className="calendar-tile-container">
+                {dayTasks.map((task, idx) => (
+                  <span key={idx} className={`task-icon ${task.type}`}>
+                    {taskEmoji[task.type]}
+                  </span>
+                ))}
 
-      <div className="task-input-container">
-        <input
-          type="text"
-          value={taskInput}
-          placeholder="Add a task"
-          onChange={(e) => setTaskInput(e.target.value)}
-          className="task-input"
+                <div className="xp-tooltip">
+                  {dayTasks.length > 0 &&
+                    `You earned ${
+                      dayTasks.filter((t) => t.completed).length * 10
+                    } XP today!`}
+                </div>
+              </div>
+            );
+          }}
         />
 
-        <select
-          value={taskType}
-          onChange={(e) => setTaskType(e.target.value)}
-          style={{ padding: 10, marginRight: 5 }}
-        >
-          <option value="exam">Exam</option>
-          <option value="assignment">Assignment</option>
-          <option value="quiz">Quiz</option>
-          <option value="homework">Homework</option>
-        </select>
+        <p className="selected-date">Selected date: {formattedDate}</p>
 
-        <button onClick={addTask} className="add-task-btn">
-          Add
-        </button>
-      </div>
-
-      <ul className="task-list">
-        {tasks.map((task) => (
-          <li
-            key={task._id}
-            className={`task-item ${task.completed ? "completed" : ""}`}
-            onClick={() => toggleTask(task._id)}
+        <div className="task-input-container">
+          <input
+            type="text"
+            value={taskInput}
+            placeholder="Add a task..."
+            onChange={(e) => setTaskInput(e.target.value)}
+            className="task-input"
+          />
+          <select
+            value={taskType}
+            onChange={(e) => setTaskType(e.target.value)}
+            className="task-select"
           >
-            <span className={`task-tag ${task.type}`}>
-              {task.type.toUpperCase()}
-            </span>
-            {task.text}
-          </li>
-        ))}
-      </ul>
+            <option value="exam">Exam</option>
+            <option value="assignment">Assignment</option>
+            <option value="quiz">Quiz</option>
+            <option value="homework">Homework</option>
+          </select>
+          <button onClick={addTask} className="add-task-btn">
+            Add
+          </button>
+        </div>
+
+        <ul className="task-list">
+          {tasks.map((task) => (
+            <li
+              key={task._id}
+              className={`task-item ${task.completed ? "completed" : ""}`}
+              onClick={() => toggleTask(task._id)}
+            >
+              <span className="task-emoji">{taskEmoji[task.type]}</span>
+              {task.text}
+
+              {/* Render all active sparkles for this task */}
+              {sparkles
+                .filter((s) => s.taskId === task._id)
+                .map((s) => (
+                  <span key={s.sparkleId} className="sparkle"></span>
+                ))}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
