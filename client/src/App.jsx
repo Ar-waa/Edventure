@@ -1,13 +1,9 @@
 import FlashcardsPage from "./pages/FlashcardsPage";
 import PlannerPage from "./pages/PlannerPage";
-<<<<<<< Updated upstream
-import ProfilePage from "./pages/ProfilePage";
-=======
 import Milestones from "./pages/milestonePage";
 import ProfilePage from "./pages/ProfilePagehardcoded";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 
->>>>>>> Stashed changes
 
 function App() {
   const UserIcon = () => (
@@ -31,9 +27,6 @@ function App() {
         <Link to="/planner" style={{ color: "#fff" }}>
           Planner
         </Link>
-<<<<<<< Updated upstream
-        <Link to="/profile" style={{ color: "#fff" }}>
-=======
         <Link 
           to="/profile" 
           style={{ 
@@ -44,7 +37,6 @@ function App() {
             textDecoration: "none"
           }}>
           <UserIcon />
->>>>>>> Stashed changes
           Profile
         </Link>
       </nav>
@@ -52,13 +44,9 @@ function App() {
       <Routes>
         <Route path="/" element={<FlashcardsPage />} />
         <Route path="/planner" element={<PlannerPage />} />
-<<<<<<< Updated upstream
-        <Route path="/profile" element={<ProfilePage />} />
-=======
         <Route path="/milestones" element={<Milestones />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/settings" element={<ProfileSettingsPage />} />
->>>>>>> Stashed changes
       </Routes>
     </Router>
   );
