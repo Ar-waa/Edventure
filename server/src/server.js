@@ -11,6 +11,11 @@ import session from "express-session";
 import profileRouter from "./routes/profileRouter";
 import plannerRouter from "./routers/plannerRouter.js"; 
 import flashcardRouter from "./routers/flashcardRouter.js";
+<<<<<<< Updated upstream
+=======
+import milestoneRouter from "./routers/milestoneRouter.js";
+import profileRouter from "./routers/profileRouter.js";
+>>>>>>> Stashed changes
 
 
 const app = express();
@@ -45,8 +50,14 @@ app.use((req, res, next) => {
 // app.use("/api/review", router);
 app.use('/api/flashcards', flashcardRouter);
 app.use("/api/planner", plannerRouter);
+<<<<<<< Updated upstream
 app.use("/api/user", userRouter);
 app.use("/api/profile", profileRouter);
+=======
+app.use("/api/milestones", milestoneRouter);
+app.use("/api/profile", profileRouter);
+
+>>>>>>> Stashed changes
 
 //client error handling
 app.use((req,res,next) => {
