@@ -1,11 +1,16 @@
 import Flashcard from "../models/flashcardModel.js";
 import OpenAI from "openai";
 import { createRequire } from "module";
+import { API } from "../secret.js";
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
 
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+    apiKey: API,
+    baseURL: "https://openrouter.ai/api/v1",
+});
+
 
 export const getFlashcards = async (req, res) => {
     try {
@@ -115,8 +120,11 @@ async function extractTextFromFile(file) {
 
         /* ---------- Build multimodal message ---------- */
         const messages = [
-        {
-            role: "user",
+            {
+                role: "system",
+                content: "You are a JSON API.You NEVER explain.You NEVER use markdown.You ONLY output valid JSON."
+            },
+            {role: "user",
             content: [
             {
                 type: "text",
@@ -132,8 +140,12 @@ async function extractTextFromFile(file) {
 
     Return ONLY a valid JSON array like:
     [
-    { "question": "...", "answer": "...", "category": "...", "difficulty": "easy" }
+    { "question": "string",
+    "answer": "string",
+    "category": "string",
+    "difficulty": "easy"}
     ]
+    ${textInput || ""}
             `,
             },
             ],
@@ -142,7 +154,7 @@ async function extractTextFromFile(file) {
 
         /* ---------- Add text input ---------- */
         if (textInput) {
-        messages[0].content.push({
+        messages[1].content.push({
             type: "text",
             text: textInput,
         });
@@ -157,7 +169,7 @@ async function extractTextFromFile(file) {
         ) {
             const extractedText = await extractTextFromFile(file);
             if (extractedText) {
-            messages[0].content.push({
+            messages[1].content.push({
                 type: "text",
                 text: extractedText,
             });
@@ -166,7 +178,7 @@ async function extractTextFromFile(file) {
 
         // Images → send directly (NO OCR)
         if (file.mimetype.startsWith("image/")) {
-            messages[0].content.push({
+            messages[1].content.push({
             type: "image_url",
             image_url: {
                 url: `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
@@ -176,51 +188,46 @@ async function extractTextFromFile(file) {
         }
 
         /* ---------- OpenAI call ---------- */
+        const model =
+    files.some(f => f.mimetype.startsWith("image/"))
+    ? "qwen/qwen-2.5-vl-7b-instruct"
+    : "meta-llama/llama-3.2-3b-instruct";
         const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
+
+        model,
         messages,
-        temperature: 0.7,
+        temperature: 0.2,
         });
 
-        const rawOutput = completion.choices[0].message.content;
+const rawOutput = completion.choices[0].message.content;
 
-        /* ---------- Parse AI output ---------- */
+// Try array first
+let jsonText = rawOutput.match(/\[[\s\S]*\]/)?.[0];
+
+// If no array, try object → extract array inside
+if (!jsonText) {
+            console.error("RAW MODEL OUTPUT:", rawOutput);
+            return res.status(500).json({ success: false, message: "AI did not return usable flashcards." });
+        }
+
         let aiFlashcards;
         try {
-        aiFlashcards = JSON.parse(rawOutput);
-        } catch {
-        return res.status(500).json({
-            success: false,
-            message: "AI returned invalid JSON. Try shorter input.",
-        });
+            aiFlashcards = JSON.parse(jsonText);
+        } catch (err) {
+            console.error("JSON parse error:", err, rawOutput);
+            return res.status(500).json({ success: false, message: "AI returned malformed JSON." });
         }
 
-        if (!Array.isArray(aiFlashcards) || aiFlashcards.length === 0) {
-        return res.status(500).json({
-            success: false,
-            message: "AI did not generate valid flashcards.",
-        });
-        }
+        const usableFlashcards = aiFlashcards.filter(c => c.question && c.answer && c.category && c.difficulty);
 
-        return res.status(200).json({
-        success: true,
-        flashcards: aiFlashcards,
-        });
+        return res.status(200).json({ success: true, flashcards: usableFlashcards });
 
     } catch (err) {
         console.error("AI generation error:", err);
-
         if (err.code === "insufficient_quota" || err.status === 429) {
-        return res.status(429).json({
-            success: false,
-            message: "AI credits exhausted",
-        });
+            return res.status(429).json({ success: false, message: "AI credits exhausted" });
         }
-
-        return res.status(500).json({
-        success: false,
-        message: "Failed to generate flashcards.",
-        });
+        return res.status(500).json({ success: false, message: "Failed to generate flashcards." });
     }
 };
 

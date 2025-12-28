@@ -25,7 +25,7 @@ export default function FlashcardsPage() {
         <div style={{ fontFamily: "Arial", maxWidth: 900, margin: "auto", padding: 20 }}>
         <div style={{ display: "flex", marginBottom: 20 }}>
             <div style={tabStyle("manager")} onClick={() => handleTabSwitch("manager")}>
-            Manage Flashcards
+            Forge Flashcards
             </div>
             <div style={tabStyle("review")} onClick={() => handleTabSwitch("review")}>
             Review Flashcards
