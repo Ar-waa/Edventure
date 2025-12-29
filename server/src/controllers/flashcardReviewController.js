@@ -24,6 +24,9 @@ export const reviewSession = async (req, res) => {
         const query = {};
         if (category) query.category = category.toLowerCase();
         if (difficulty) query.difficulty = difficulty.toLowerCase();
+        
+        // Exclude already reviewed flashcards
+        if (reviewedIds.length > 0) query._id = { $nin: reviewedIds.map(id => id.toString()) };
 
         // Count matching flashcards
         const count = await Flashcard.countDocuments(query);
@@ -42,7 +45,7 @@ export const reviewSession = async (req, res) => {
         res.status(200).json({
         success: true,
         flashcard: {
-            id: flashcard._id,
+            _id: flashcard._id,
             question: flashcard.question,
             answer: flashcard.answer,
             category: flashcard.category,

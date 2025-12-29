@@ -162,8 +162,8 @@ export default function FlashcardManager() {
 
     // ------------------- RENDER -------------------
     return (
-        <div>
-            <h2>Flashcards Manager</h2>
+        <div style={{ width: "100%", minHeight: "100vh", padding: "20px", boxSizing: "border-box" }}>
+            <h2>💎 FLASHCARD ARMORY</h2>
 
             {/* Filters */}
             <div style={{ padding: 20, fontFamily: "Arial, sans-serif" }}>
@@ -330,6 +330,16 @@ export default function FlashcardManager() {
 
             {/* ---------------- CSS ---------------- */}
             <style jsx>{`
+            :global(body) {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
+
+    /* Update your existing container logic */
+    div {
+        box-sizing: border-box;
+            }
                 .flashcard {
                     width: 200px;
                     height: 150px;
