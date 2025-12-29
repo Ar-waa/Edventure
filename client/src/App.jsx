@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import FlashcardsPage from "./pages/FlashcardsPage";
 import PlannerPage from "./pages/PlannerPage";
 import Milestones from "./pages/milestonePage";
-import ProfilePage from "./pages/ProfilePage";
+import ProfilePage from "./pages/ProfilePageDB";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import TimerPage from "./pages/TimerPage";
 
@@ -26,10 +26,10 @@ function App() {
         <Link to="/" style={{ color: "#fff", marginRight: 20 }}>
           Flashcards
         </Link>
-        <Link to="/planner" style={{ color: "#fff" }}>
+        <Link to="/planner" style={{ color: "#fff", marginRight: 20}}>
           Planner
         </Link>
-        <Link to="/milestones" style={{ color: "#fff" }}>
+        <Link to="/milestones" style={{ color: "#fff", marginRight: 20 }}>
           Milestones
         </Link>
         <Link to="/timer" style={{ color: "#fff", display: "inline-flex", alignItems: "center", gap: 5 }}>
@@ -42,7 +42,7 @@ function App() {
             color: "#fff", 
             display: "flex", 
             alignItems: "center", 
-            gap: 8,
+            gap: 20,
             textDecoration: "none"
           }}
         >

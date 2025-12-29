@@ -2,36 +2,9 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    _id: { // This will be the username
+    _id: {
       type: String,
       required: true,
-      unique: true,
-      trim: true,
-      minlength: 3,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    firstName: {
-      type: String,
-      default: "",
-    },
-    lastName: {
-      type: String,
-      default: "",
-    },
-    bio: {
-      type: String,
-      default: "",
-      maxlength: 500,
     },
     totalStudyMinutes: {
       type: Number,
@@ -55,7 +28,23 @@ const userSchema = new mongoose.Schema(
       studied2hr: { type: Boolean, default: false },
       studied5hr: { type: Boolean, default: false },
     },
-    profilePicture: {
+    bio: {
+      type: String,
+      default: "",
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    FirstName: {
+      type: String,
+      default: "",
+    },
+    LastName: {
+      type: String,
+      default: "",
+    },
+    email: {
       type: String,
       default: "",
     },
@@ -64,8 +53,13 @@ const userSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    _id: true // This tells Mongoose to use default _id behavior
+  }
 );
+
+userSchema.index({ email: 1 }, { unique: true, sparse: true }); d
 
 const User = mongoose.model("User", userSchema);
 export default User;
