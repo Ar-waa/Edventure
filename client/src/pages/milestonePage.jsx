@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import MilestoneSection from "../components/MilestoneSection";
+import {milestoneApi} from "../Api/milestoneApi";
 
-const API_BASE = "http://localhost:3030/api";
 
 export default function Milestones() {
   const [milestone, setMilestone] = useState(null);
@@ -13,11 +12,18 @@ export default function Milestones() {
   useEffect(() => {
     async function fetchMilestones() {
       try {
-        const res = await axios.get(`${API_BASE}/milestones/${userId}`);
+        const res = await milestoneApi.getMilestones(userId);
         setMilestone(res.data);
       } catch (err) {
-        console.error(err);
-      } finally {
+    // If the error is 404, it means we need to create the document
+    if (err.response && err.response.status === 404) {
+      console.log("No milestone found, creating one...");
+      const newRes = await axios.post(`${API_BASE}/milestones/${userId}/create`);
+      setMilestone(newRes.data);
+    } else {
+      console.error(err);
+    }
+  } finally {
         setLoading(false);
       }
     }

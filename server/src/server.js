@@ -1,51 +1,61 @@
-import { serverPort, mongodbURL } from './secret.js';
+import { serverPort, mongodbURL, API } from './secret.js';
 import mongoose from "mongoose";
 import express from "express";
+import cors from "cors"
 import morgan from "morgan";
 import createHttpError from "http-errors";
 import rateLimit from "express-rate-limit";
-import cors from "cors"
 import session from "express-session";
 
 import plannerRouter from "./routers/plannerRouter.js"; 
 import flashcardRouter from "./routers/flashcardRouter.js";
 import milestoneRouter from "./routers/milestoneRouter.js";
+import quizRouter from "./routers/quizRouter.js";
 
 
 const app = express();
 
+app.use(cors({
+    origin: 'http://127.0.0.1:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow OPTIONS
+    credentials: true,
+    optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+}));
 app.use(morgan("dev"));
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
-const rateLimiter = rateLimit({
-    windowMs: 1*60*1000,
-    max: 100,
-    message: 'Too many requests. Try again later',
-});
-app.use(rateLimiter);
 
-app.use(
-    session({
-        secret: "flashcardsecret",
-        resave: false,
-        saveUninitialized: true,
-        cookie: { secure: false },
-    })
-);
+app.get("/api/test", (req, res) => {
+    res.json({ message: "CORS is working!" });
+});
+//const rateLimiter = rateLimit({
+  //  windowMs: 1*60*1000,
+    //max: 100,
+    //message: 'Too many requests. Try again later',
+//});
+//app.use(rateLimiter);
+
+//app.use(
+  //  session({
+    //    secret: "flashcardsecret",
+      //  resave: false,
+        //saveUninitialized: true,
+        //cookie: { secure: false },
+    //})
+//);
 
 
 // app.use("/api/review", router);
 app.use('/api/flashcards', flashcardRouter);
 app.use("/api/planner", plannerRouter);
 app.use("/api/milestones", milestoneRouter);
-
+app.use("/api/quiz", quizRouter);
 
 //client error handling
-app.use((req,res,next) => {
-    createHttpError(404, 'route not found');
-    next();
+app.use((req, res, next) => {
+  next(createHttpError(404, "Route not found"));
 });
+
 
 //server error handling
 app.use((err, req, res, next) => {
@@ -55,11 +65,11 @@ app.use((err, req, res, next) => {
     });
 });
 
+
 app.get("/", (req, res) => res.send("Server is running"));
 
-
-app.listen(serverPort, async () => {
-    console.log(`Server running on http://localhost:${serverPort}`);
+app.listen(5000, async () => {
+    console.log(`Server running on http://127.0.0.1:${serverPort}`);
     await connectDB();
 });
 

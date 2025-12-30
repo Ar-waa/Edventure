@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const FLASHCARD_API = "http://localhost:5000/api/flashcards";
+const FLASHCARD_API = "http://127.0.0.1:5000/api/flashcards";
 
 // Fetch a random flashcard with optional category/difficulty filters
 export const getReviewFlashcards = async (filters = {}, flashcardId = null, isCorrect = null) => {
