@@ -4,7 +4,7 @@ import {
     getReviewStats,
     resetReviewSession,
     getFlashcardDetailedStats,
-    getCategories
+    getCategories 
 } from "../api/reviewApi";
 
 export default function FlashcardReview() {
@@ -193,12 +193,12 @@ export default function FlashcardReview() {
                         </div>
                     </div>
 
-                    <button
+                    {/* <button
                         onClick={() => currentCard?._id && fetchCardStats(currentCard._id)}
                         style={{ marginTop: 20, padding: "6px 12px" }}
                     >
                         View Card Stats
-                    </button>
+                    </button> */}
 
                     {cardStats && (
                         <div style={{ marginTop: 10, background: "#EEE", padding: 10, borderRadius: 8 }}>

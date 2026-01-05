@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserProfile, getUserStats, createDemoUser } from "../Api/profileApi";
-import SessionTracker from "./SessionTracker";
+import SessionTracker from "../components/SessionTracker";
+
 
 
 export default function ProfilePage() {
