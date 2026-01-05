@@ -18,146 +18,128 @@ export default function ProfilePage() {
 
 
  useEffect(() => {
-   const fetchOrCreateUserProfile = async () => {
-     try {
-       setLoading(true);
-       setError(null);
-      
-       console.log("Starting profile fetch/creation...");
-      
-       // First, check if we have a user ID in localStorage
-       let userId = localStorage.getItem("userId");
-      
-       if (!userId) {
-         console.log("No user ID found. Checking for demo user or creating one...");
-        
-         // Check if we have a demo user ID
-         userId = localStorage.getItem("demoUserId");
-        
-         if (!userId) {
-           console.log("Creating demo user...");
-           // Try to create a demo user
-           const demoUserRes = await createDemoUser();
-          
-           if (demoUserRes && demoUserRes.success) {
-             userId = demoUserRes.data._id;
-             localStorage.setItem("demoUserId", userId);
-             localStorage.setItem("userId", userId);
-             setIsDemoMode(true);
-             console.log("Demo user created with ID:", userId);
-           } else {
-             throw new Error("Could not create or find a user profile");
-           }
-         } else {
-           setIsDemoMode(true);
-           console.log("Using existing demo user:", userId);
-         }
-       }
-      
-       console.log("Fetching profile for userId:", userId);
-      
-       // Try to fetch profile and stats
-       const [profileRes, statsRes] = await Promise.allSettled([
-         getUserProfile(userId),
-         getUserStats(userId),
-       ]);
+  const fetchOrCreateUserProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
+      console.log("Starting profile fetch/creation...");
 
-       console.log("Profile API result:", profileRes);
-       console.log("Stats API result:", statsRes);
+      // 1️⃣ Check for a real userId first
+      let userId = localStorage.getItem("userId");
+      let demoMode = false;
 
+      // 2️⃣ If no userId, check for demo userId
+      if (!userId) {
+        userId = localStorage.getItem("demoUserId");
 
-       // Handle profile response
-       let profileData = null;
-       let statsData = null;
+        if (!userId) {
+          console.log("No demo user found. Creating a new demo user...");
+          const demoUserRes = await createDemoUser();
+          if (demoUserRes && demoUserRes.success) {
+            userId = demoUserRes.data._id;
+            localStorage.setItem("demoUserId", userId);
+            demoMode = true;
+            console.log("Demo user created with ID:", userId);
+          } else {
+            throw new Error("Could not create or find a user profile");
+          }
+        } else {
+          demoMode = true;
+          console.log("Using existing demo user:", userId);
+        }
+      }
 
+      setIsDemoMode(demoMode);
 
-       if (profileRes.status === 'fulfilled' && profileRes.value.success) {
-         profileData = profileRes.value.data;
-       } else {
-         console.warn("Profile fetch failed:", profileRes.reason || profileRes.value);
-       }
+      console.log("Fetching profile for userId:", userId);
 
+      // 3️⃣ Fetch profile & stats from API
+      const [profileRes, statsRes] = await Promise.allSettled([
+        getUserProfile(userId),
+        getUserStats(userId),
+      ]);
 
-       if (statsRes.status === 'fulfilled' && statsRes.value.success) {
-         statsData = statsRes.value.data;
-       } else {
-         console.warn("Stats fetch failed:", statsRes.reason || statsRes.value);
-       }
+      console.log("Profile API result:", profileRes);
+      console.log("Stats API result:", statsRes);
 
+      let profileData = null;
+      let statsData = null;
 
-       // If we have data, use it
-       if (profileData || statsData) {
-         setProfile(profileData);
-         setStats(statsData);
-        
-         // Create mock data for any missing parts
-         if (!profileData && statsData) {
-           setProfile({
-             _id: userId,
-             username: `user_${userId.substring(0, 6)}`,
-             email: "user@example.com",
-             firstName: "Demo",
-             lastName: "User",
-             bio: "Welcome to my learning journey! I'm using this app to track my study progress.",
-             joinedDate: new Date(),
-           });
-         }
-        
-         if (!statsData && profileData) {
-           setStats({
-             xp: 1250,
-             level: 3,
-             totalStudyMinutes: 185,
-             achievements: {
-               studied25min: true,
-               studied1hr: true,
-               studied2hr: false,
-               studied5hr: false,
-             },
-             nextLevelXP: 3000,
-             progress: 41.67,
-           });
-         }
-       } else {
-         // If both API calls failed, use mock data
-         console.log("Both API calls failed, using mock data for demo");
-         setIsDemoMode(true);
-         setProfile({
-           _id: userId,
-           username: `demo_${Date.now().toString(36)}`,
-           email: "demo@example.com",
-           firstName: "Demo",
-           lastName: "User",
-           bio: "Welcome to my learning journey! This is a demo profile. To see real data, please set up user authentication.",
-           joinedDate: new Date(),
-         });
-         setStats({
-           xp: 1250,
-           level: 3,
-           totalStudyMinutes: 185,
-           achievements: {
-             studied25min: true,
-             studied1hr: true,
-             studied2hr: false,
-             studied5hr: false,
-           },
-           nextLevelXP: 3000,
-           progress: 41.67,
-         });
-       }
-      
-     } catch (error) {
-       console.error("Error in profile setup:", error);
-       setError(error.message || "Failed to setup profile");
-     } finally {
-       setLoading(false);
-     }
-   };
+      if (profileRes.status === "fulfilled" && profileRes.value.success) {
+        profileData = profileRes.value.data;
+      } else {
+        console.warn("Profile fetch failed:", profileRes.reason || profileRes.value);
+      }
 
+      if (statsRes.status === "fulfilled" && statsRes.value.success) {
+        statsData = statsRes.value.data;
+      } else {
+        console.warn("Stats fetch failed:", statsRes.reason || statsRes.value);
+      }
 
-   fetchOrCreateUserProfile();
- }, []);
+      // 4️⃣ Use API data if available, else fallback to mock/demo
+      if (profileData || statsData) {
+        setProfile(profileData || {
+          _id: userId,
+          username: `demo_${Date.now().toString(36)}`,
+          email: "demo@example.com",
+          firstName: "Demo",
+          lastName: "User",
+          bio: "This is a demo profile. Set up authentication for real data.",
+          joinedDate: new Date(),
+        });
+
+        setStats(statsData || {
+          xp: 1250,
+          level: 3,
+          totalStudyMinutes: 185,
+          achievements: {
+            studied25min: true,
+            studied1hr: true,
+            studied2hr: false,
+            studied5hr: false,
+          },
+          nextLevelXP: 3000,
+          progress: 41.67,
+        });
+      } else {
+        console.log("No profile found, using demo data");
+        setIsDemoMode(true);
+        setProfile({
+          _id: userId,
+          username: `demo_${Date.now().toString(36)}`,
+          email: "demo@example.com",
+          firstName: "Demo",
+          lastName: "User",
+          bio: "This is a demo profile. Set up authentication for real data.",
+          joinedDate: new Date(),
+        });
+        setStats({
+          xp: 1250,
+          level: 3,
+          totalStudyMinutes: 185,
+          achievements: {
+            studied25min: true,
+            studied1hr: true,
+            studied2hr: false,
+            studied5hr: false,
+          },
+          nextLevelXP: 3000,
+          progress: 41.67,
+        });
+      }
+    } catch (err) {
+      console.error("Error in profile setup:", err);
+      setError(err.message || "Failed to setup profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchOrCreateUserProfile();
+}, []);
+
 
 
  // Create a new demo user
@@ -212,7 +194,7 @@ export default function ProfilePage() {
    );
  }
  <SessionTracker
- userId={displayProfile._id || "user123"}
+ userId={profile._id || "user123"}
  onSessionEnd={(sessionData) => {
    // Refresh profile data when session ends
    console.log("Session completed:", sessionData);

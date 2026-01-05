@@ -1,3 +1,5 @@
+import axios from "axios";
+
 const API_URL = "http://localhost:3030/api/profile";
 
 export const getUserProfile = async (userId) => {

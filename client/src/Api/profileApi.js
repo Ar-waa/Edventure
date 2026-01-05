@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:3030/api/users";
+const API_URL = "http://localhost:3030/api/profile";
 
 export const getUserProfile = async (userId) => {
   try {
