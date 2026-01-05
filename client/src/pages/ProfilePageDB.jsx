@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserProfile, getUserStats, createDemoUser } from "../Api/profileApi";
-import SessionTracker from "../components/SessionTracker";
+///import SessionTracker from "../components/SessionTracker";
 
 
 
@@ -211,15 +211,15 @@ export default function ProfilePage() {
      </div>
    );
  }
- <SessionTracker
- userId={displayProfile._id || "user123"}
- onSessionEnd={(sessionData) => {
+ ///<SessionTracker
+ //userId={displayProfile._id || "user123"}
+ //onSessionEnd={(sessionData) => {
    // Refresh profile data when session ends
-   console.log("Session completed:", sessionData);
+   //console.log("Session completed:", sessionData);
    // You can trigger a refresh here if needed
-   window.location.reload(); // Simple refresh
- }}
-/>
+   //window.location.reload(); // Simple refresh
+ //}//}
+///>
 
 
  // Error state
