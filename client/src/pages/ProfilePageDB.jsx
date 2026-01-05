@@ -193,9 +193,9 @@ export default function ProfilePage() {
      </div>
    );
  }
- <SessionTracker
- userId={profile._id || "user123"}
- onSessionEnd={(sessionData) => {
+//  <SessionTracker
+//  userId={profile._id || "user123"}
+//  onSessionEnd={(sessionData) => {
    // Refresh profile data when session ends
    //console.log("Session completed:", sessionData);
    // You can trigger a refresh here if needed
