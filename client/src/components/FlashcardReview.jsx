@@ -8,7 +8,6 @@ import {
 } from "../api/reviewApi";
 
 export default function FlashcardReview() {
-    // -------------------- STATE --------------------
     const [currentCard, setCurrentCard] = useState(null);
     const [flipped, setFlipped] = useState(false);
     const [filters, setFilters] = useState({ category: "", difficulty: "" });
@@ -26,8 +25,6 @@ export default function FlashcardReview() {
     const [showOverallStats, setShowOverallStats] = useState(false);
     const [reviewedIds, setReviewedIds] = useState(new Set());
 
-    // -------------------- FUNCTIONS --------------------
-
     const startReview = useCallback(async () => {
         setReviewFinished(false);
         setStats({
@@ -43,10 +40,9 @@ export default function FlashcardReview() {
 
         try {
             const res = await getReviewFlashcards(filters);
-            if (res.success) setCurrentCard(res.flashcard || null);
-            else setCurrentCard(null);
+            setCurrentCard(res.success ? res.flashcard || null : null);
         } catch (err) {
-            console.error("Error starting review:", err);
+            console.error(err);
         }
     }, [filters]);
 
@@ -55,9 +51,8 @@ export default function FlashcardReview() {
 
         try {
             setReviewedIds(prev => new Set(prev).add(currentCard._id));
-            await getReviewFlashcards({ flashcardId: currentCard._id, isCorrect });
 
-            // Update session stats
+            // Update stats
             setStats(prev => {
                 const newStats = { ...prev };
                 newStats.total += 1;
@@ -81,12 +76,8 @@ export default function FlashcardReview() {
                 return newStats;
             });
 
-            // Load next flashcard
-            const res = await getReviewFlashcards({
-                ...filters,
-                reviewedIds: Array.from(reviewedIds),
-            });
-
+            // Load next card
+            const res = await getReviewFlashcards({ ...filters, reviewedIds: Array.from(reviewedIds) });
             if (res.success && res.flashcard) {
                 setCurrentCard(res.flashcard);
                 setFlipped(false);
@@ -101,7 +92,7 @@ export default function FlashcardReview() {
                 }
             }
         } catch (err) {
-            console.error("Error submitting answer:", err);
+            console.error(err);
         }
     };
 
@@ -129,7 +120,7 @@ export default function FlashcardReview() {
             const res = await getFlashcardDetailedStats(id);
             if (res.success) setCardStats(res.data);
         } catch (err) {
-            console.error("Error fetching card stats:", err);
+            console.error(err);
         }
     };
 
@@ -139,19 +130,25 @@ export default function FlashcardReview() {
                 const res = await getCategories();
                 if (res.success) setCategories(res.categories);
             } catch (err) {
-                console.error("Error fetching categories:", err);
+                console.error(err);
             }
         };
         fetchCategories();
     }, []);
 
-    // -------------------- RENDER --------------------
     return (
-        <div style={{ padding: 30, fontFamily: "Arial" }}>
-            <h1 style={{ color: "#6A0DAD" }}>Flashcard Review</h1>
+        <div style={{
+            width: "100%",
+            minHeight: "calc(100vh - 70px)", // full screen minus navbar
+            background: "#d0f4f7",
+            fontFamily: "Arial, sans-serif",
+            padding: 20,
+            boxSizing: "border-box"
+        }}>
+            <h1 style={{ textAlign: "center", color: "#008B8B", marginBottom: 20 }}>Flashcard Review</h1>
 
             {/* Filters */}
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
                 <select
                     value={filters.category}
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
@@ -165,7 +162,6 @@ export default function FlashcardReview() {
                 <select
                     value={filters.difficulty}
                     onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
-                    style={{ marginLeft: 10 }}
                 >
                     <option value="">All Difficulty</option>
                     <option value="easy">Easy</option>
@@ -173,59 +169,89 @@ export default function FlashcardReview() {
                     <option value="hard">Hard</option>
                 </select>
 
-                <button onClick={startReview} style={{ marginLeft: 10, padding: "6px 12px" }}>
+                <button
+                    onClick={startReview}
+                    style={{
+                        padding: "8px 16px",
+                        background: "#008B8B",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 8,
+                        cursor: "pointer"
+                    }}
+                >
                     Start Review
                 </button>
             </div>
 
             {/* Flashcard */}
             {currentCard ? (
-                <div style={{ textAlign: "center", position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
                     <div
                         className={`card ${flipped ? "flip" : ""}`}
                         onClick={() => setFlipped(!flipped)}
+                        style={{
+                            width: 350,
+                            height: 220,
+                            perspective: 1000,
+                            cursor: "pointer",
+                            position: "relative",
+                        }}
                     >
-                        <div className="card-face card-front">
+                        <div style={{
+                            position: "absolute",
+                            width: "100%",
+                            height: "100%",
+                            borderRadius: 12,
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            fontSize: 22,
+                            textAlign: "center",
+                            backfaceVisibility: "hidden",
+                            transition: "transform 0.5s",
+                            background: "#00CED1",
+                            color: "#fff",
+                            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)"
+                        }}>
                             {currentCard.question}
                         </div>
-                        <div className="card-face card-back">
+
+                        <div style={{
+                            position: "absolute",
+                            width: "100%",
+                            height: "100%",
+                            borderRadius: 12,
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            fontSize: 22,
+                            textAlign: "center",
+                            backfaceVisibility: "hidden",
+                            transition: "transform 0.5s",
+                            background: "#20B2AA",
+                            color: "#fff",
+                            transform: flipped ? "rotateY(0deg)" : "rotateY(180deg)"
+                        }}>
                             {currentCard.answer}
                         </div>
                     </div>
-
-                    {/* <button
-                        onClick={() => currentCard?._id && fetchCardStats(currentCard._id)}
-                        style={{ marginTop: 20, padding: "6px 12px" }}
-                    >
-                        View Card Stats
-                    </button> */}
-
-                    {cardStats && (
-                        <div style={{ marginTop: 10, background: "#EEE", padding: 10, borderRadius: 8 }}>
-                            <p><strong>Category:</strong> {cardStats.category}</p>
-                            <p><strong>Difficulty:</strong> {cardStats.difficulty}</p>
-                            <p><strong>Total Reviewed:</strong> {cardStats.total}</p>
-                            <p><strong>Correct:</strong> {cardStats.correct}</p>
-                            <p><strong>Accuracy:</strong> {cardStats.accuracy?.toFixed(2)}%</p>
-                        </div>
-                    )}
                 </div>
             ) : reviewFinished ? (
-                <h3>Review session completed!</h3>
+                <h3 style={{ textAlign: "center", color: "#006666" }}>Review session completed!</h3>
             ) : (
-                <h3>Click "Start Review" to begin</h3>
+                <h3 style={{ textAlign: "center", color: "#006666" }}>Click "Start Review" to begin</h3>
             )}
 
             {/* Action buttons */}
             {currentCard && (
-                <div style={{ marginTop: 20, textAlign: "center" }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
                     <button
                         onClick={() => handleAnswer(true)}
                         style={{
-                            background: "#6A0DAD",
-                            color: "white",
+                            background: "#008B8B",
+                            color: "#fff",
                             padding: "10px 20px",
-                            marginRight: 10,
                             border: "none",
                             borderRadius: 8,
                             cursor: "pointer",
@@ -251,12 +277,12 @@ export default function FlashcardReview() {
             )}
 
             {/* Reset Session Button */}
-            <div style={{ textAlign: "center", marginTop: 20 }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
                 <button
                     onClick={handleReset}
                     style={{
                         padding: "8px 20px",
-                        background: "#6A0DAD",
+                        background: "#008B8B",
                         color: "#fff",
                         border: "none",
                         borderRadius: 8,
@@ -268,83 +294,34 @@ export default function FlashcardReview() {
             </div>
 
             {/* Overall stats */}
-            {reviewStats && (
-                <>
-                    <p><strong>Total Reviewed (All Time):</strong> {reviewStats.totalReviewed}</p>
-                    <p><strong>Accuracy (All Time):</strong> {reviewStats.accuracy}%</p>
-                </>
-            )}
-
-            {showOverallStats && (
+            {showOverallStats && reviewStats && (
                 <div style={{
-                    marginTop: 30,
+                    maxWidth: 400,
+                    margin: "auto",
+                    background: "#b2fefa",
                     padding: 20,
-                    background: "#F3E5FF",
                     borderRadius: 10,
-                    width: 350,
-                    marginLeft: "auto",
-                    marginRight: "auto"
+                    textAlign: "center"
                 }}>
-                    <h3 style={{ color: "#6A0DAD" }}>Review Stats</h3>
+                    <h3 style={{ color: "#008B8B" }}>Review Stats</h3>
                     <p><strong>Total Answered:</strong> {stats.total}</p>
                     <p><strong>Right:</strong> {stats.right}</p>
                     <p><strong>Wrong:</strong> {stats.wrong}</p>
 
                     <h4>Category Breakdown</h4>
-                    {stats.perCategory &&
-                        Object.entries(stats.perCategory).map(([cat, data]) => (
-                            <p key={cat}>{cat}: ✅ {data.right} | ❌ {data.wrong}</p>
-                        ))}
+                    {stats.perCategory && Object.entries(stats.perCategory).map(([cat, data]) => (
+                        <p key={cat}>{cat}: ✅ {data.right} | ❌ {data.wrong}</p>
+                    ))}
 
                     <h4>Difficulty Breakdown</h4>
-                    {stats.perDifficulty &&
-                        Object.entries(stats.perDifficulty).map(([diff, data]) => (
-                            <p key={diff}>{diff}: ✅ {data.right} | ❌ {data.wrong}</p>
-                        ))}
+                    {stats.perDifficulty && Object.entries(stats.perDifficulty).map(([diff, data]) => (
+                        <p key={diff}>{diff}: ✅ {data.right} | ❌ {data.wrong}</p>
+                    ))}
+
+                    <p><strong>Total Reviewed (All Time):</strong> {reviewStats.totalReviewed}</p>
+                    <p><strong>Accuracy (All Time):</strong> {reviewStats.accuracy}%</p>
                 </div>
             )}
-
-            {/* ---------------- CSS ---------------- */}
-            <style jsx>{`
-                .card {
-                    width: 300px;
-                    height: 200px;
-                    perspective: 1000px;
-                    margin: auto;
-                    cursor: pointer;
-                }
-
-                .card-face {
-                    width: 100%;
-                    height: 100%;
-                    border-radius: 12px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    font-size: 20px;
-                    position: absolute;
-                    backface-visibility: hidden;
-                    transition: transform 0.5s;
-                    text-align: center;
-                }
-
-                .card-front {
-                    background-color: #B388EB;
-                }
-
-                .card-back {
-                    background-color: #C0C0C0;
-                    transform: rotateY(180deg);
-                }
-
-                .card.flip .card-front {
-                    transform: rotateY(180deg);
-                }
-
-                .card.flip .card-back {
-                    transform: rotateY(0deg);
-                }
-            `}</style>
         </div>
     );
 }

@@ -1,7 +1,7 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   text-align: center;
 }
 
@@ -40,3 +40,43 @@
 .read-the-docs {
   color: #888;
 }
+
+.navbar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+  /* padding: 0 30px; */
+  background: linear-gradient(135deg, #00ffff, #00bfff); /* Cyan/blue gradient */
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  font-family: "Press Start 2P", monospace;
+  color: #00ffff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+}
+
+.navbar a {
+  color: #247a7a;
+  text-decoration: none;
+  font-weight: bold;
+  transition: 0.3s;
+  text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
+}
+
+.navbar a:hover {
+  color: #ffffff;
+  text-shadow: 0 0 10px #0ff, 0 0 20px #00ffff;
+}
+
+.page-content {
+  margin-top: 70px; /* space for navbar */
+  /* padding: 20px; */
+  min-height: calc(100vh - 70px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
