@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUserProfile, getUserStats, createDemoUser } from "../Api/profileApi";
+import { checkAuthStatus } from "../Api/authApi";  // From authApi.js
+import { getCurrentUserProfile, getCurrentUserStats } from "../Api/profileApi";  // From profileApi.js
+// 
 ///import SessionTracker from "../components/SessionTracker";
 
 
@@ -23,111 +25,36 @@ export default function ProfilePage() {
       setLoading(true);
       setError(null);
 
-      console.log("Starting profile fetch/creation...");
+      // 1. Check if user is authenticated
+      const authCheck = await checkAuthStatus();
+      
+      if (authCheck.authenticated) {
+        console.log("User is authenticated:", authCheck.userId);
+        setIsDemoMode(false);
+        
+        // Fetch real user data
+        const [profileRes, statsRes] = await Promise.allSettled([
+          getCurrentUserProfile(),
+          getCurrentUserStats(),
+        ]);
 
-      // 1️⃣ Check for a real userId first
-      let userId = localStorage.getItem("userId");
-      let demoMode = false;
-
-      // 2️⃣ If no userId, check for demo userId
-      if (!userId) {
-        userId = localStorage.getItem("demoUserId");
-
-        if (!userId) {
-          console.log("No demo user found. Creating a new demo user...");
-          const demoUserRes = await createDemoUser();
-          if (demoUserRes && demoUserRes.success) {
-            userId = demoUserRes.data._id;
-            localStorage.setItem("demoUserId", userId);
-            demoMode = true;
-            console.log("Demo user created with ID:", userId);
-          } else {
-            throw new Error("Could not create or find a user profile");
-          }
+        if (profileRes.status === "fulfilled" && profileRes.value.success) {
+          setProfile(profileRes.value.data);
         } else {
-          demoMode = true;
-          console.log("Using existing demo user:", userId);
+          console.warn("Profile fetch failed");
+          setError("Failed to load profile");
         }
-      }
-
-      setIsDemoMode(demoMode);
-
-      console.log("Fetching profile for userId:", userId);
-
-      // 3️⃣ Fetch profile & stats from API
-      const [profileRes, statsRes] = await Promise.allSettled([
-        getUserProfile(userId),
-        getUserStats(userId),
-      ]);
-
-      console.log("Profile API result:", profileRes);
-      console.log("Stats API result:", statsRes);
-
-      let profileData = null;
-      let statsData = null;
-
-      if (profileRes.status === "fulfilled" && profileRes.value.success) {
-        profileData = profileRes.value.data;
+        
+        if (statsRes.status === "fulfilled" && statsRes.value.success) {
+          setStats(statsRes.value.data);
+        } else {
+          console.warn("Stats fetch failed");
+        }
       } else {
-        console.warn("Profile fetch failed:", profileRes.reason || profileRes.value);
-      }
-
-      if (statsRes.status === "fulfilled" && statsRes.value.success) {
-        statsData = statsRes.value.data;
-      } else {
-        console.warn("Stats fetch failed:", statsRes.reason || statsRes.value);
-      }
-
-      // 4️⃣ Use API data if available, else fallback to mock/demo
-      if (profileData || statsData) {
-        setProfile(profileData || {
-          _id: userId,
-          username: `demo_${Date.now().toString(36)}`,
-          email: "demo@example.com",
-          firstName: "Demo",
-          lastName: "User",
-          bio: "This is a demo profile. Set up authentication for real data.",
-          joinedDate: new Date(),
-        });
-
-        setStats(statsData || {
-          xp: 1250,
-          level: 3,
-          totalStudyMinutes: 185,
-          achievements: {
-            studied25min: true,
-            studied1hr: true,
-            studied2hr: false,
-            studied5hr: false,
-          },
-          nextLevelXP: 3000,
-          progress: 41.67,
-        });
-      } else {
-        console.log("No profile found, using demo data");
-        setIsDemoMode(true);
-        setProfile({
-          _id: userId,
-          username: `demo_${Date.now().toString(36)}`,
-          email: "demo@example.com",
-          firstName: "Demo",
-          lastName: "User",
-          bio: "This is a demo profile. Set up authentication for real data.",
-          joinedDate: new Date(),
-        });
-        setStats({
-          xp: 1250,
-          level: 3,
-          totalStudyMinutes: 185,
-          achievements: {
-            studied25min: true,
-            studied1hr: true,
-            studied2hr: false,
-            studied5hr: false,
-          },
-          nextLevelXP: 3000,
-          progress: 41.67,
-        });
+        // 2. User not authenticated - redirect to login
+        console.log("User not authenticated, redirecting to login");
+        window.location.href = "/login";
+        return;
       }
     } catch (err) {
       console.error("Error in profile setup:", err);
@@ -136,6 +63,7 @@ export default function ProfilePage() {
       setLoading(false);
     }
   };
+
 
   fetchOrCreateUserProfile();
 }, []);
