@@ -1,4 +1,3 @@
-// models/userModel.js - CHANGE FIELD NAMES to match your database
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -6,6 +5,40 @@ const userSchema = new mongoose.Schema(
     _id: {
       type: String,
       required: true,
+    },
+    username: { 
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 30,
+      match: /^[a-zA-Z0-9_]+$/, // Alphanumeric and underscores only
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    firstname: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    lastname: { 
+      type: String,
+      default: "",
+      trim: true,
+    },
+    bio: {
+      type: String,
+      default: "",
     },
     totalStudyMinutes: {
       type: Number,
@@ -29,30 +62,6 @@ const userSchema = new mongoose.Schema(
       studied2hr: { type: Boolean, default: false },
       studied5hr: { type: Boolean, default: false },
     },
-    bio: {
-      type: String,
-      default: "",
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    firstname: {
-      type: String,
-      default: "",
-    },
-    lastname: { 
-      type: String,
-      default: "",
-    },
-    email: {
-      type: String,
-      default: "",
-    },
-    joinedDate: {
-      type: Date,
-      default: Date.now,
-    },
     totalSessions: { 
       type: Number,
       default: 0,
@@ -69,13 +78,15 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    joinedDate: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { 
     timestamps: true,
   }
 );
-
-userSchema.index({ email: 1 }, { unique: true, sparse: true }); 
 
 const User = mongoose.model("User", userSchema);
 export default User;
