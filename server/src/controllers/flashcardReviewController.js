@@ -1,8 +1,6 @@
 import Flashcard from "../models/flashcardModel.js";
 import Progress from "../models/flashcardProgModel.js";
 
-// POST /api/flashcards/review
-// Body: { category?: string, difficulty?: string, flashcardId?: string, isCorrect?: boolean }
 export const reviewSession = async (req, res) => {
     try {
         const { category, difficulty, flashcardId, isCorrect } = req.query;
@@ -55,17 +53,23 @@ export const reviewSession = async (req, res) => {
 
         const flashcard = await Flashcard.findOne(query).skip(randomIndex);
 
-        res.status(200).json({
-        success: true,
-        flashcard: {
-            _id: flashcard._id,
-            question: flashcard.question,
-            answer: flashcard.answer,
-            category: flashcard.category,
-            difficulty: flashcard.difficulty,
-        },
-        });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
+    res.status(200).json({
+      success: true,
+      flashcard: {
+        _id: flashcard._id,
+        question: flashcard.question,
+        answer: flashcard.answer,
+        category: flashcard.category,
+        difficulty: flashcard.difficulty,
+      },
+      reviewedIds: reviewedIds,
+      remaining: count - 1
+    });
+  } catch (err) {
+    console.error('Review session error:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: err.message 
+    });
+  }
 };

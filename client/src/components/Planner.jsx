@@ -1,3 +1,5 @@
+// File: /client/src/pages/Planner.jsx
+
 import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -24,13 +26,12 @@ function Planner() {
     total: 0,
   });
 
-  const userId = "123";
   const formattedDate = date.toISOString().split("T")[0];
-  const [sparkles, setSparkles] = useState([]); // Updated state
+  const [sparkles, setSparkles] = useState([]);
 
   // Fetch all tasks once
   useEffect(() => {
-    fetchAllTasks(userId)
+    fetchAllTasks()
       .then((res) => {
         setAllTasks(res.data);
         const map = {};
@@ -40,8 +41,24 @@ function Planner() {
         });
         setTaskMap(map);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error fetching all tasks:", err);
+        if (err.response?.status === 401) {
+          // Not logged in - redirect to login
+          window.location.href = "/login";
+        }
+      });
   }, []);
+
+  // Rebuild taskMap automatically from allTasks
+  useEffect(() => {
+    const map = {};
+    allTasks.forEach((task) => {
+      if (!map[task.date]) map[task.date] = [];
+      map[task.date].push(task);
+    });
+    setTaskMap(map);
+  }, [allTasks]);
 
   // Weekly summary
   useEffect(() => {
@@ -66,49 +83,64 @@ function Planner() {
 
   // Fetch tasks for selected date
   useEffect(() => {
-    fetchTasksByDate(formattedDate, userId)
-      .then((res) => setTasks(res.data))
-      .catch((err) => console.error(err));
+    fetchTasksByDate(formattedDate)
+      .then((res) => {
+        console.log("Tasks for date response:", res.data);
+        setTasks(res.data.data);
+      })
+      .catch((err) => {
+        console.error("Error fetching tasks:", err);
+        if (err.response?.status === 401) {
+          // Not logged in
+          setTasks([]);
+        }
+      });
   }, [formattedDate]);
 
   // Add task
   const addTask = () => {
-    if (!taskInput.trim()) return;
+    if (!taskInput.trim()) {
+      alert("Please enter a task description");
+      return;
+    }
 
     const newTaskData = {
-      userId,
       date: formattedDate,
       text: taskInput,
       type: taskType,
     };
 
+    console.log("Adding task:", newTaskData);
+
     createTask(newTaskData)
       .then((res) => {
-        const newTask = res.data;
+        console.log("Task created response:", res.data);
+        const newTask = res.data.data;
         setTasks((prev) => [...prev, newTask]);
+        setAllTasks((prev) => [...prev, newTask]); // Only update allTasks, taskMap rebuilds automatically
         setTaskInput("");
-        setAllTasks((prev) => [...prev, newTask]);
-        setTaskMap((prev) => {
-          const updated = { ...prev };
-          if (!updated[formattedDate]) updated[formattedDate] = [];
-          updated[formattedDate].push(newTask);
-          return updated;
-        });
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error creating task:", err);
+        if (err.response?.status === 401) {
+          alert("Please login to add tasks");
+          window.location.href = "/login";
+        } else {
+          alert("Error creating task: " + (err.response?.data?.message || err.message));
+        }
+      });
   };
 
   // Toggle completion
   const toggleTask = (taskId) => {
     toggleTaskStatus(taskId)
       .then((res) => {
-        const updatedTask = res.data;
+        const updatedTask = res.data.data;
 
         if (updatedTask.completed) {
           const sparkleId = `${taskId}-${Date.now()}`;
           setSparkles((prev) => [...prev, { taskId, sparkleId }]);
 
-          // Remove sparkle after animation
           setTimeout(() => {
             setSparkles((prev) =>
               prev.filter((s) => s.sparkleId !== sparkleId)
@@ -131,7 +163,12 @@ function Planner() {
           return updated;
         });
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error toggling task:", err);
+        if (err.response?.status === 401) {
+          alert("Please login to update tasks");
+        }
+      });
   };
 
   // Task type emojis
@@ -147,7 +184,9 @@ function Planner() {
       {/* Sidebar */}
       <div className="sidebar">
         <h2>Edventure Stats</h2>
-        <div className="badge">🏆 Weekly XP</div>
+        <div className="badge">
+        🏆 XP Completed: {weeklySummary.finished * 10}
+        </div>
         <div className="badge">⭐ Finished: {weeklySummary.finished}</div>
         <div className="badge">⚡ Unfinished: {weeklySummary.unfinished}</div>
         <div className="badge">🎖 Total Tasks: {weeklySummary.total}</div>
@@ -193,6 +232,9 @@ function Planner() {
             placeholder="Add a task..."
             onChange={(e) => setTaskInput(e.target.value)}
             className="task-input"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") addTask();
+            }}
           />
           <select
             value={taskType}
@@ -219,7 +261,6 @@ function Planner() {
               <span className="task-emoji">{taskEmoji[task.type]}</span>
               {task.text}
 
-              {/* Render all active sparkles for this task */}
               {sparkles
                 .filter((s) => s.taskId === task._id)
                 .map((s) => (
@@ -227,6 +268,11 @@ function Planner() {
                 ))}
             </li>
           ))}
+          {tasks.length === 0 && (
+            <li className="task-item" style={{ textAlign: "center", color: "#666", fontStyle: "italic" }}>
+              No tasks for this date. Add one above!
+            </li>
+          )}
         </ul>
       </div>
     </div>

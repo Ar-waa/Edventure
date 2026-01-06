@@ -6,6 +6,40 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    username: { 
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      minlength: 3,
+      maxlength: 30,
+      match: /^[a-zA-Z0-9_]+$/, // Alphanumeric and underscores only
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    firstname: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    lastname: { 
+      type: String,
+      default: "",
+      trim: true,
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
     totalStudyMinutes: {
       type: Number,
       default: 0,
@@ -28,25 +62,21 @@ const userSchema = new mongoose.Schema(
       studied2hr: { type: Boolean, default: false },
       studied5hr: { type: Boolean, default: false },
     },
-    bio: {
-      type: String,
-      default: "",
+    totalSessions: { 
+      type: Number,
+      default: 0,
     },
-    password: {
-      type: String,
-      required: true,
+    currentStreak: { 
+      type: Number,
+      default: 0,
     },
-    FirstName: {
-      type: String,
-      default: "",
+    lastSessionDate: {
+      type: Date,
+      default: null,
     },
-    LastName: {
-      type: String,
-      default: "",
-    },
-    email: {
-      type: String,
-      default: "",
+    longeststreak: { 
+      type: Number,
+      default: 0,
     },
     joinedDate: {
       type: Date,
@@ -55,11 +85,8 @@ const userSchema = new mongoose.Schema(
   },
   { 
     timestamps: true,
-    _id: true // This tells Mongoose to use default _id behavior
   }
 );
-
-userSchema.index({ email: 1 }, { unique: true, sparse: true }); 
 
 const User = mongoose.model("User", userSchema);
 export default User;

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import axios from "axios";
 import {
     getReviewFlashcards,
     getReviewStats,
@@ -48,8 +49,8 @@ export default function FlashcardReview() {
         }
     }, [filters]);
 
-    const handleAnswer = async (isCorrect) => {
-        if (!currentCard) return;
+  const handleAnswer = async (isCorrect) => {
+    if (!currentCard) return;
 
         try {
             const nextReviewedIds = Array.from(reviewedIds).concat(currentCard._id);
@@ -74,8 +75,8 @@ export default function FlashcardReview() {
                 const cat = currentCard.category || "Uncategorized";
                 const diff = currentCard.difficulty || "Normal";
 
-                newStats.perCategory[cat] = newStats.perCategory[cat] || { right: 0, wrong: 0 };
-                newStats.perDifficulty[diff] = newStats.perDifficulty[diff] || { right: 0, wrong: 0 };
+        newStats.perCategory[cat] = newStats.perCategory[cat] || { right: 0, wrong: 0 };
+        newStats.perDifficulty[diff] = newStats.perDifficulty[diff] || { right: 0, wrong: 0 };
 
                 if (isCorrect) {
                     newStats.perCategory[cat].right++;
