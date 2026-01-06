@@ -5,10 +5,19 @@ import Progress from "../models/flashcardProgModel.js";
 // Body: { category?: string, difficulty?: string, flashcardId?: string, isCorrect?: boolean }
 export const reviewSession = async (req, res) => {
     try {
-        const { category, difficulty, flashcardId, isCorrect } = req.body;
+        const { category, difficulty, flashcardId, isCorrect } = req.query;
+        let reviewedIds = req.query.reviewedIds || req.query['reviewedIds[]'];
 
+        // Normalize to an array (handles undefined, single string, or array)
+        if (!reviewedIds) {
+            reviewedIds = [];
+        } else if (!Array.isArray(reviewedIds)) {
+            reviewedIds = [reviewedIds];
+        }
+
+        const isCorrectBool = isCorrect === 'true';
         // ✅ Step 1: Record progress if flashcardId and isCorrect are provided
-        if (flashcardId && typeof isCorrect === "boolean") {
+        if (flashcardId && (isCorrect === 'true' || isCorrect === 'false')) {
         const flashcard = await Flashcard.findById(flashcardId);
         if (flashcard) {
             await Progress.create({
@@ -17,6 +26,7 @@ export const reviewSession = async (req, res) => {
             difficulty: flashcard.difficulty,
             isCorrect,
             });
+            console.log("Progress saved for card:", flashcardId);
         }
         }
 
@@ -26,14 +36,17 @@ export const reviewSession = async (req, res) => {
         if (difficulty) query.difficulty = difficulty.toLowerCase();
         
         // Exclude already reviewed flashcards
-        if (reviewedIds.length > 0) query._id = { $nin: reviewedIds.map(id => id.toString()) };
+        if (reviewedIds.length > 0) {
+            query._id = { $nin: reviewedIds };
+        }
 
         // Count matching flashcards
         const count = await Flashcard.countDocuments(query);
         if (count === 0) {
-        return res.status(404).json({
+        return res.status(200).json({
             success: false,
-            message: "No flashcards found for the selected category/difficulty",
+            flashcard: null,
+            message: "Session Complete",
         });
         }
 
