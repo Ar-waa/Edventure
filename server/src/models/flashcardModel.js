@@ -24,7 +24,13 @@ const flashcardSchema = new mongoose.Schema(
         default: "easy",
         lowercase: true,
     },
+
+        userId: {
+        type: String,
+        default: "",
+    },
 },
+
     { timestamps: true }
 );
 
