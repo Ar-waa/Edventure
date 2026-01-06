@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import "./App.css";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import FlashcardsPage from "./pages/FlashcardsPage";
@@ -7,55 +7,18 @@ import Milestones from "./pages/milestonePage";
 import ProfilePage from "./pages/ProfilePageDB";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import TimerPage from "./pages/TimerPage";
-<<<<<<< HEAD
-import { useState, useEffect, useRef } from "react";
-import { fetchAllTasks } from "./Api/Planner";
-
-function App() {
-  const [upcomingTasks, setUpcomingTasks] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const userId = "123"; // replace with dynamic user ID if available
-  const dropdownRef = useRef(null);
-
-  // Fetch all tasks for notifications
-  useEffect(() => {
-    fetchAllTasks(userId)
-      .then((res) => {
-        const tasks = res.data;
-
-        const today = new Date();
-        const isUpcoming = (taskDate) => {
-          const date = new Date(taskDate);
-          const diffDays = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
-          return diffDays >= 0 && diffDays <= 2;
-        };
-
-        // Only unfinished tasks in the next 2 days
-        const upcoming = tasks.filter((t) => !t.completed && isUpcoming(t.date));
-        setUpcomingTasks(upcoming);
-      })
-      .catch((err) => console.error(err));
-  }, [userId]);
-
-  // Close dropdown if clicked outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-=======
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { fetchAllTasks } from "./Api/Planner";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [upcomingTasks, setUpcomingTasks] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
+  // Check authentication on mount
   useEffect(() => {
     fetch('http://localhost:3030/api/check-auth', {
       credentials: 'include'
@@ -67,7 +30,41 @@ function App() {
           setUserId(data.userId);
           localStorage.setItem("userId", data.userId);
         }
-      });
+      })
+      .catch(err => console.error("Auth check error:", err));
+  }, []);
+
+  // Fetch all tasks for notifications when authenticated and userId is available
+  useEffect(() => {
+    if (isAuthenticated && userId) {
+      fetchAllTasks(userId)
+        .then((res) => {
+          const tasks = res.data;
+          const today = new Date();
+          
+          const isUpcoming = (taskDate) => {
+            const date = new Date(taskDate);
+            const diffDays = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+            return diffDays >= 0 && diffDays <= 2;
+          };
+
+          // Only unfinished tasks in the next 2 days
+          const upcoming = tasks.filter((t) => !t.completed && isUpcoming(t.date));
+          setUpcomingTasks(upcoming);
+        })
+        .catch((err) => console.error("Tasks fetch error:", err));
+    }
+  }, [isAuthenticated, userId]);
+
+  // Close dropdown if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -81,11 +78,11 @@ function App() {
     }
     setIsAuthenticated(false);
     setUserId(null);
+    setUpcomingTasks([]); // Clear tasks on logout
     localStorage.removeItem("userId");
     window.location.href = "/login";
   };
 
->>>>>>> user_authentication
   const UserIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style={{ verticalAlign: 'middle' }}>
       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -197,37 +194,21 @@ function App() {
 
   return (
     <Router>
-<<<<<<< HEAD
-      {/* Navbar */}
-      <nav className="navbar">
-        <Link to="/">Flashcards</Link>
-        <Link to="/planner">Planner</Link>
-        <Link to="/milestones">Milestones</Link>
-        <Link to="/timer" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <TimerIcon />
-          Timer
-        </Link>
-        <Link to="/profile" style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <UserIcon />
-          Profile
-        </Link>
-        <NotificationBell />
-      </nav>
-=======
-      {/*Navbar - only show when authenticated */}
+      {/* Navbar - only show when authenticated */}
       {isAuthenticated && (
         <nav className="navbar">
-          <Link to="/">Flashcards    </Link>
-          <Link to="/planner">Planner     </Link>
-          <Link to="/milestones">Milestones     </Link>
+          <Link to="/">Flashcards</Link>
+          <Link to="/planner">Planner</Link>
+          <Link to="/milestones">Milestones</Link>
           <Link to="/timer" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
             <TimerIcon />
-            Timer    
+            Timer
           </Link>
           <Link to="/profile" style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <UserIcon />
-            Profile      
+            Profile
           </Link>
+          <NotificationBell />
           <button
             onClick={handleLogout}
             style={{
@@ -247,7 +228,6 @@ function App() {
           </button>
         </nav>
       )}
->>>>>>> user_authentication
 
       <div className="page-content">
         <Routes>
@@ -261,32 +241,32 @@ function App() {
           
           {/* Protected routes */}
           <Route path="/" element={
-            <ProtectedRoute>
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
               <FlashcardsPage />
             </ProtectedRoute>
           } />
           <Route path="/planner" element={
-            <ProtectedRoute>
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
               <PlannerPage />
             </ProtectedRoute>
           } />
           <Route path="/milestones" element={
-            <ProtectedRoute>
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
               <Milestones />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
-            <ProtectedRoute>
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
               <ProfilePage />
             </ProtectedRoute>
           } />
           <Route path="/profile/settings" element={
-            <ProtectedRoute>
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
               <ProfileSettingsPage />
             </ProtectedRoute>
           } />
           <Route path="/timer" element={
-            <ProtectedRoute>
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
               <TimerPage />
             </ProtectedRoute>
           } />
