@@ -33,7 +33,7 @@ function Planner() {
   useEffect(() => {
     fetchAllTasks()
       .then((res) => {
-        setAllTasks(res.data);
+        setAllTasks(res.data.data);
         const map = {};
         res.data.forEach((task) => {
           if (!map[task.date]) map[task.date] = [];
