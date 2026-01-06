@@ -2,6 +2,11 @@ import axios from "axios";
 
 const BASE_URL = "http://localhost:3030/api/planner";
 
+// Helper to get current userId
+const getCurrentUserId = () => {
+  return localStorage.getItem("userId") || "123";
+};
+
 // get tasks for a date
 export const fetchTasksByDate = (date, userId) => {
   return axios.get(`${BASE_URL}/tasks`, {
@@ -11,7 +16,7 @@ export const fetchTasksByDate = (date, userId) => {
 
 // add a task
 export const createTask = (taskData) => {
-  return axios.post(`${BASE_URL}/tasks`, taskData);
+  return axios.post(`${BASE_URL}/tasks`, {...taskData, userId: getCurrentUserId()});
 };
 
 // toggle task completion

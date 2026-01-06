@@ -3,6 +3,11 @@ import axios from "axios";
 const API_URL = "http://localhost:3030/api/flashcards";
 // const FLASHCARD_API = "/api/flashcards";
 
+// Helper to get current userId
+const getCurrentUserId = () => {
+  return localStorage.getItem("userId") || "demo_user";
+};
+
 export const getFlashcards = async (filters = {}, page = 1, limit = 5) => {
     try {
         const res = await axios.get(API_URL, {
@@ -22,7 +27,7 @@ export const getFlashcards = async (filters = {}, page = 1, limit = 5) => {
 };
 
 export const createFlashcard = async (flashcard) => {
-    const res = await axios.post(API_URL, flashcard);
+    const res = await axios.post(API_URL, {...flashcard, userId: getCurrentUserId()});
     return res.data;
 };
 
