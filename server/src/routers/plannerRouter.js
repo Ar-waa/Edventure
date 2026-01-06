@@ -1,14 +1,11 @@
 import express from "express";
+import { getTasksByDate, addTask, toggleTask, getAllTasks } from "../controllers/plannerController.js";
 
 const router = express.Router();
 
-import { getTasksByDate, addTask, toggleTask, getAllTasks } from "../controllers/plannerController.js";
-
-// Routes
-router.get("/tasks", getTasksByDate); // ?date=YYYY-MM-DD&userId=123
+router.get("/tasks", getTasksByDate);
 router.get("/tasks/all", getAllTasks);
 router.post("/tasks", addTask);
 router.patch("/tasks/:taskId", toggleTask);
 
-export default router;  
-
+export default router;
