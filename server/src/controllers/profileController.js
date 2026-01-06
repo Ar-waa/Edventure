@@ -57,12 +57,11 @@ export const getUserStats = async (req, res) => {
 // Update existing user profile
 export const updateProfile = async (req, res) => {
   try {
-    const { FirstName, LastName, bio, email } = req.body;
+    const { firstname, lastname, bio, email } = req.body; 
     
     const updatedUser = await User.findByIdAndUpdate(
       req.params.userId,
-      { FirstName, LastName, bio, email },
-      { new: true, runValidators: true }
+      { firstname, lastname, bio, email }, 
     ).select("-password");
 
     if (!updatedUser) {
