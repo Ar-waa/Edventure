@@ -25,9 +25,11 @@ const flashcardSchema = new mongoose.Schema(
         lowercase: true,
     },
 
-        userId: {
-        type: String,
-        default: "",
+    userId: {
+            type: String,
+            required: true, // Make it required
+            default: "", // Empty string for public flashcards
+            index: true, // Add index for faster queries
     },
 },
 
