@@ -14,13 +14,13 @@ const openai = new OpenAI({
 
 export const getFlashcards = async (req, res) => {
     try {
-        const { search, category, difficulty, page = 1, limit = 5 } = req.query;
+        const { search, category, difficulty, page = 1, limit = 5, userId} = req.query;
 
         const query = {};
         if (search) query.question = { $regex: search, $options: "i" };
         if (category) query.category = category;
         if (difficulty) query.difficulty = difficulty;
-
+        if (userId) query.userId = userId;
         const total = await Flashcard.countDocuments(query); // total matching docs
         const flashcards = await Flashcard.find(query)
             .skip((page - 1) * limit)  // skip previous pages
