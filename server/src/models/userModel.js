@@ -1,3 +1,4 @@
+// models/userModel.js - CHANGE FIELD NAMES to match your database
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -36,11 +37,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    FirstName: {
+    firstname: {
       type: String,
       default: "",
     },
-    LastName: {
+    lastname: { 
       type: String,
       default: "",
     },
@@ -52,10 +53,25 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    totalSessions: { 
+      type: Number,
+      default: 0,
+    },
+    currentStreak: { 
+      type: Number,
+      default: 0,
+    },
+    lastSessionDate: {
+      type: Date,
+      default: null,
+    },
+    longeststreak: { 
+      type: Number,
+      default: 0,
+    },
   },
   { 
     timestamps: true,
-    _id: true // This tells Mongoose to use default _id behavior
   }
 );
 
