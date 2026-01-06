@@ -5,10 +5,11 @@ import { login, register } from "../Api/authApi";
 export default function LoginPage({ setIsAuthenticated, setUserId }) {
   const [isLogin, setIsLogin] = useState(true); // Toggles between Login/Register
   const [formData, setFormData] = useState({
+    username: "",
     email: "",
     password: "",
     firstname: "",
-    lastname: "",
+    lastname: ""
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,6 +40,7 @@ export default function LoginPage({ setIsAuthenticated, setUserId }) {
           password: formData.password,
           firstname: formData.firstname,
           lastname: formData.lastname,
+          username: formData.username, // Add username
         });
       }
       
@@ -46,6 +48,7 @@ export default function LoginPage({ setIsAuthenticated, setUserId }) {
         setIsAuthenticated(true);
         setUserId(response.data.userId);
         localStorage.setItem("userId", response.data.userId);
+        localStorage.setItem("username", response.data.username || ""); // Save username
         navigate("/profile");
       } else {
         setError(response.message || "Authentication failed");
@@ -100,6 +103,22 @@ export default function LoginPage({ setIsAuthenticated, setUserId }) {
           {/*sign up */}
           {!isLogin && (
             <>
+              <div style={{ marginBottom: 15 }}>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username (optional, 3-30 characters)"
+                  value={formData.username || ''}
+                  onChange={handleChange}
+                  style={{
+                    width: "100%",
+                    padding: "12px 15px",
+                    border: "1px solid #ddd",
+                    borderRadius: 8,
+                    fontSize: 16,
+                  }}
+                />
+              </div>
               <div style={{ marginBottom: 15 }}>
                 <input
                   type="text"
