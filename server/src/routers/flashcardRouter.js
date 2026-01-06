@@ -36,8 +36,6 @@ flashcardRouter.get("/progress/difficulty", getDifficultyStats);
 flashcardRouter.get("/progress/category-difficulty", getCategoryDifficultyStats);
 flashcardRouter.get("/progress/:id/progress", getFlashcardProgress);
 flashcardRouter.get("/progress/:id/progress/detailed", getFlashcardProgressDetailed);
-
-// Review session route
-flashcardRouter.post("/review", reviewSession);
+flashcardRouter.get("/review", reviewSession);
 
 export default flashcardRouter;

@@ -2,56 +2,56 @@ import Flashcard from "../models/flashcardModel.js";
 import Progress from "../models/flashcardProgModel.js";
 
 export const reviewSession = async (req, res) => {
-  try {
-    const { category, difficulty, flashcardId, isCorrect, reviewedIds = [] } = req.body;
-    const userId = req.session.userId;
+    try {
+        const { category, difficulty, flashcardId, isCorrect } = req.query;
+        let reviewedIds = req.query.reviewedIds || req.query['reviewedIds[]'];
 
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'You must be logged in to review flashcards'
-      });
-    }
+        // Normalize to an array (handles undefined, single string, or array)
+        if (!reviewedIds) {
+            reviewedIds = [];
+        } else if (!Array.isArray(reviewedIds)) {
+            reviewedIds = [reviewedIds];
+        }
 
-    // Record progress
-    if (flashcardId && typeof isCorrect === "boolean") {
-      const flashcard = await Flashcard.findOne({ _id: flashcardId, userId: userId });
-      
-      if (flashcard) {
-        await Progress.create({
-          flashcard: flashcard._id,
-          category: flashcard.category,
-          difficulty: flashcard.difficulty,
-          isCorrect,
-        });
+        const isCorrectBool = isCorrect === 'true';
+        // ✅ Step 1: Record progress if flashcardId and isCorrect are provided
+        if (flashcardId && (isCorrect === 'true' || isCorrect === 'false')) {
+        const flashcard = await Flashcard.findById(flashcardId);
+        if (flashcard) {
+            await Progress.create({
+            flashcard: flashcard._id,
+            category: flashcard.category,
+            difficulty: flashcard.difficulty,
+            isCorrect,
+            });
+            console.log("Progress saved for card:", flashcardId);
+        }
+        }
+
+        // ✅ Step 2: Select a random flashcard matching filters
+        const query = {};
+        if (category) query.category = category.toLowerCase();
+        if (difficulty) query.difficulty = difficulty.toLowerCase();
         
-        reviewedIds.push(flashcardId);
-      }
-    }
+        // Exclude already reviewed flashcards
+        if (reviewedIds.length > 0) {
+            query._id = { $nin: reviewedIds };
+        }
 
-    // Select a random flashcard
-    const query = { userId: userId };
-    
-    if (category) query.category = category.toLowerCase();
-    if (difficulty) query.difficulty = difficulty.toLowerCase();
-    
-    if (reviewedIds.length > 0) {
-      query._id = { $nin: reviewedIds };
-    }
+        // Count matching flashcards
+        const count = await Flashcard.countDocuments(query);
+        if (count === 0) {
+        return res.status(200).json({
+            success: false,
+            flashcard: null,
+            message: "Session Complete",
+        });
+        }
 
-    const count = await Flashcard.countDocuments(query);
-    
-    if (count === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "No more flashcards to review",
-        completed: true,
-        reviewedCount: reviewedIds.length
-      });
-    }
+        // Pick a random index
+        const randomIndex = Math.floor(Math.random() * count);
 
-    const randomIndex = Math.floor(Math.random() * count);
-    const flashcard = await Flashcard.findOne(query).skip(randomIndex);
+        const flashcard = await Flashcard.findOne(query).skip(randomIndex);
 
     res.status(200).json({
       success: true,
