@@ -18,7 +18,7 @@ function App() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Check authentication on mount
+  
   useEffect(() => {
     fetch('http://localhost:3030/api/check-auth', {
       credentials: 'include'
@@ -34,26 +34,30 @@ function App() {
       .catch(err => console.error("Auth check error:", err));
   }, []);
 
-  // Fetch all tasks for notifications when authenticated and userId is available
-  useEffect(() => {
-    if (isAuthenticated && userId) {
-      fetchAllTasks(userId)
-        .then((res) => {
-          const tasks = res.data;
-          const today = new Date();
-          
-          const isUpcoming = (taskDate) => {
-            const date = new Date(taskDate);
-            const diffDays = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
-            return diffDays >= 0 && diffDays <= 2;
-          };
+  
+  const updateUpcomingTasks = () => {
+    if (!isAuthenticated || !userId) return;
 
-          // Only unfinished tasks in the next 2 days
-          const upcoming = tasks.filter((t) => !t.completed && isUpcoming(t.date));
-          setUpcomingTasks(upcoming);
-        })
-        .catch((err) => console.error("Tasks fetch error:", err));
-    }
+    fetchAllTasks()
+      .then(res => {
+        const tasks = res.data.data; // Use .data.data to match your Planner API
+        const today = new Date();
+
+        const isUpcoming = (taskDate) => {
+          const date = new Date(taskDate);
+          const diffDays = Math.ceil((date - today) / (1000 * 60 * 60 * 24));
+          return diffDays >= 0 && diffDays <= 2;
+        };
+
+        const upcoming = tasks.filter((t) => !t.completed && isUpcoming(t.date));
+        setUpcomingTasks(upcoming);
+      })
+      .catch(err => console.error("Tasks fetch error:", err));
+  };
+
+  // Fetch upcoming tasks initially and whenever userId/isAuthenticated changes
+  useEffect(() => {
+    updateUpcomingTasks();
   }, [isAuthenticated, userId]);
 
   // Close dropdown if clicked outside
@@ -247,7 +251,7 @@ function App() {
           } />
           <Route path="/planner" element={
             <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <PlannerPage />
+              <PlannerPage updateUpcomingTasks={updateUpcomingTasks} />
             </ProtectedRoute>
           } />
           <Route path="/milestones" element={

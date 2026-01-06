@@ -1,5 +1,3 @@
-// File: /client/src/pages/Planner.jsx
-
 import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -12,7 +10,7 @@ import {
   toggleTaskStatus,
 } from "../Api/Planner";
 
-function Planner() {
+function Planner({ updateUpcomingTasks }) { // <-- receive prop from App.jsx
   const [date, setDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
   const [taskInput, setTaskInput] = useState("");
@@ -26,7 +24,9 @@ function Planner() {
     total: 0,
   });
 
-  const formattedDate = date.toISOString().split("T")[0];
+  // Use local date instead of toISOString (fixes today date showing wrong)
+  const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+
   const [sparkles, setSparkles] = useState([]);
 
   // Fetch all tasks once
@@ -35,7 +35,7 @@ function Planner() {
       .then((res) => {
         setAllTasks(res.data.data);
         const map = {};
-        res.data.forEach((task) => {
+        res.data.data.forEach((task) => {
           if (!map[task.date]) map[task.date] = [];
           map[task.date].push(task);
         });
@@ -44,7 +44,6 @@ function Planner() {
       .catch((err) => {
         console.error("Error fetching all tasks:", err);
         if (err.response?.status === 401) {
-          // Not logged in - redirect to login
           window.location.href = "/login";
         }
       });
@@ -85,13 +84,11 @@ function Planner() {
   useEffect(() => {
     fetchTasksByDate(formattedDate)
       .then((res) => {
-        console.log("Tasks for date response:", res.data);
         setTasks(res.data.data);
       })
       .catch((err) => {
         console.error("Error fetching tasks:", err);
         if (err.response?.status === 401) {
-          // Not logged in
           setTasks([]);
         }
       });
@@ -110,15 +107,14 @@ function Planner() {
       type: taskType,
     };
 
-    console.log("Adding task:", newTaskData);
-
     createTask(newTaskData)
       .then((res) => {
-        console.log("Task created response:", res.data);
         const newTask = res.data.data;
         setTasks((prev) => [...prev, newTask]);
-        setAllTasks((prev) => [...prev, newTask]); // Only update allTasks, taskMap rebuilds automatically
+        setAllTasks((prev) => [...prev, newTask]);
         setTaskInput("");
+
+        if (updateUpcomingTasks) updateUpcomingTasks(); // <-- update notifications
       })
       .catch((err) => {
         console.error("Error creating task:", err);
@@ -140,20 +136,13 @@ function Planner() {
         if (updatedTask.completed) {
           const sparkleId = `${taskId}-${Date.now()}`;
           setSparkles((prev) => [...prev, { taskId, sparkleId }]);
-
           setTimeout(() => {
-            setSparkles((prev) =>
-              prev.filter((s) => s.sparkleId !== sparkleId)
-            );
+            setSparkles((prev) => prev.filter((s) => s.sparkleId !== sparkleId));
           }, 800);
         }
 
-        setTasks((prev) =>
-          prev.map((t) => (t._id === taskId ? updatedTask : t))
-        );
-        setAllTasks((prev) =>
-          prev.map((t) => (t._id === taskId ? updatedTask : t))
-        );
+        setTasks((prev) => prev.map((t) => (t._id === taskId ? updatedTask : t)));
+        setAllTasks((prev) => prev.map((t) => (t._id === taskId ? updatedTask : t)));
         setTaskMap((prev) => {
           const updated = { ...prev };
           const dayTasks = updated[updatedTask.date].map((t) =>
@@ -162,6 +151,8 @@ function Planner() {
           updated[updatedTask.date] = dayTasks;
           return updated;
         });
+
+        if (updateUpcomingTasks) updateUpcomingTasks(); // <-- update notifications
       })
       .catch((err) => {
         console.error("Error toggling task:", err);
@@ -171,7 +162,6 @@ function Planner() {
       });
   };
 
-  // Task type emojis
   const taskEmoji = {
     exam: "📚",
     assignment: "📝",
@@ -184,9 +174,7 @@ function Planner() {
       {/* Sidebar */}
       <div className="sidebar">
         <h2>Edventure Stats</h2>
-        <div className="badge">
-        🏆 XP Completed: {weeklySummary.finished * 10}
-        </div>
+        <div className="badge">🏆 XP Completed: {weeklySummary.finished * 10}</div>
         <div className="badge">⭐ Finished: {weeklySummary.finished}</div>
         <div className="badge">⚡ Unfinished: {weeklySummary.unfinished}</div>
         <div className="badge">🎖 Total Tasks: {weeklySummary.total}</div>
@@ -201,7 +189,7 @@ function Planner() {
           value={date}
           className="planner-calendar"
           tileContent={({ date }) => {
-            const dayStr = date.toISOString().split("T")[0];
+            const dayStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
             const dayTasks = taskMap[dayStr] || [];
 
             return (
@@ -211,12 +199,9 @@ function Planner() {
                     {taskEmoji[task.type]}
                   </span>
                 ))}
-
                 <div className="xp-tooltip">
                   {dayTasks.length > 0 &&
-                    `You earned ${
-                      dayTasks.filter((t) => t.completed).length * 10
-                    } XP today!`}
+                    `You earned ${dayTasks.filter((t) => t.completed).length * 10} XP today!`}
                 </div>
               </div>
             );
@@ -232,9 +217,7 @@ function Planner() {
             placeholder="Add a task..."
             onChange={(e) => setTaskInput(e.target.value)}
             className="task-input"
-            onKeyPress={(e) => {
-              if (e.key === "Enter") addTask();
-            }}
+            onKeyPress={(e) => { if (e.key === "Enter") addTask(); }}
           />
           <select
             value={taskType}
@@ -246,9 +229,7 @@ function Planner() {
             <option value="quiz">Quiz</option>
             <option value="homework">Homework</option>
           </select>
-          <button onClick={addTask} className="add-task-btn">
-            Add
-          </button>
+          <button onClick={addTask} className="add-task-btn">Add</button>
         </div>
 
         <ul className="task-list">
@@ -260,12 +241,9 @@ function Planner() {
             >
               <span className="task-emoji">{taskEmoji[task.type]}</span>
               {task.text}
-
-              {sparkles
-                .filter((s) => s.taskId === task._id)
-                .map((s) => (
-                  <span key={s.sparkleId} className="sparkle"></span>
-                ))}
+              {sparkles.filter((s) => s.taskId === task._id).map((s) => (
+                <span key={s.sparkleId} className="sparkle"></span>
+              ))}
             </li>
           ))}
           {tasks.length === 0 && (
