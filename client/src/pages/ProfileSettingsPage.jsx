@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { updateProfile, changePassword } from "../Api/profileApi";
+import { updateProfile, changePassword, getCurrentUserProfile } from "../Api/profileApi"; // Updated imports
 
 export default function ProfileSettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [username, setUsername] = useState("");
+  const [userId, setUserId] = useState("");
   const navigate = useNavigate();
-
-  const userId = localStorage.getItem("userId") || "user123";
 
   const [profileForm, setProfileForm] = useState({
     firstName: "",
@@ -21,6 +21,51 @@ export default function ProfileSettingsPage() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Fetch user profile data on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      // Get userId from localStorage
+      const storedUserId = localStorage.getItem("userId");
+      const storedUsername = localStorage.getItem("username") || storedUserId;
+      
+      setUserId(storedUserId || "");
+      setUsername(storedUsername || "");
+      
+      if (storedUserId) {
+        try {
+          const res = await getCurrentUserProfile();
+          
+          if (res.success && res.data) {
+            // Update profile form with fetched data
+            setProfileForm({
+              firstName: res.data.firstName || "",
+              lastName: res.data.lastName || "",
+              bio: res.data.bio || "",
+            });
+            
+            // Update username if available from profile
+            if (res.data.username) {
+              setUsername(res.data.username);
+              localStorage.setItem("username", res.data.username);
+            }
+          } else if (!res.authenticated) {
+            // User not authenticated
+            setMessage({ type: "error", text: "Please login to view settings" });
+            setTimeout(() => navigate("/login"), 1500);
+          }
+        } catch (err) {
+          console.error("Error fetching profile:", err);
+          setMessage({ type: "error", text: "Failed to load profile data" });
+        }
+      } else {
+        setMessage({ type: "error", text: "Please login first" });
+        setTimeout(() => navigate("/login"), 1500);
+      }
+    };
+
+    fetchProfile();
+  }, [navigate]);
 
   // Simple SVG icons
   const ArrowLeftIcon = () => (
@@ -53,10 +98,15 @@ export default function ProfileSettingsPage() {
     setMessage({ type: "", text: "" });
 
     try {
-      const res = await updateProfile(userId, profileForm);
+      const res = await updateProfile(profileForm); // No userId parameter needed
       
       if (res.success) {
         setMessage({ type: "success", text: "Profile updated successfully!" });
+        // Update username if it was changed in the update
+        if (res.data && res.data.username) {
+          setUsername(res.data.username);
+          localStorage.setItem("username", res.data.username);
+        }
         setTimeout(() => {
           navigate("/profile");
         }, 1500);
@@ -64,7 +114,8 @@ export default function ProfileSettingsPage() {
         setMessage({ type: "error", text: res.message || "Failed to update profile" });
       }
     } catch (error) {
-      setMessage({ type: "error", text: "An error occurred" });
+      console.error("Profile update error:", error);
+      setMessage({ type: "error", text: "An error occurred while updating profile" });
     } finally {
       setLoading(false);
     }
@@ -74,6 +125,13 @@ export default function ProfileSettingsPage() {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: "", text: "" });
+
+    // Validation
+    if (!passwordForm.currentPassword) {
+      setMessage({ type: "error", text: "Please enter your current password" });
+      setLoading(false);
+      return;
+    }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setMessage({ type: "error", text: "New passwords do not match" });
@@ -87,14 +145,21 @@ export default function ProfileSettingsPage() {
       return;
     }
 
+    if (passwordForm.currentPassword === passwordForm.newPassword) {
+      setMessage({ type: "error", text: "New password must be different from current password" });
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await changePassword(userId, {
+      const res = await changePassword({ // No userId parameter needed
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
 
       if (res.success) {
         setMessage({ type: "success", text: "Password changed successfully!" });
+        // Clear form
         setPasswordForm({
           currentPassword: "",
           newPassword: "",
@@ -104,7 +169,8 @@ export default function ProfileSettingsPage() {
         setMessage({ type: "error", text: res.message || "Failed to change password" });
       }
     } catch (error) {
-      setMessage({ type: "error", text: "An error occurred" });
+      console.error("Password change error:", error);
+      setMessage({ type: "error", text: "An error occurred while changing password" });
     } finally {
       setLoading(false);
     }
@@ -122,6 +188,30 @@ export default function ProfileSettingsPage() {
     alignItems: "center",
     gap: 8,
   });
+
+  if (!userId) {
+    return (
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: 40, textAlign: "center", fontFamily: "Arial, sans-serif" }}>
+        <div style={{ padding: 20, background: "#FFEBEE", color: "#C62828", borderRadius: 8, marginBottom: 20 }}>
+          Please login to access settings
+        </div>
+        <button
+          onClick={() => navigate("/login")}
+          style={{
+            background: "#6A0DAD",
+            color: "white",
+            border: "none",
+            padding: "12px 30px",
+            borderRadius: 8,
+            fontSize: 16,
+            cursor: "pointer",
+          }}
+        >
+          Go to Login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", padding: 20, fontFamily: "Arial, sans-serif" }}>
@@ -145,7 +235,7 @@ export default function ProfileSettingsPage() {
         <h1 style={{ color: "#6A0DAD", margin: 0 }}>Account Settings</h1>
       </div>
 
-      {/* User ID Info */}
+      {/* User Info */}
       <div style={{ 
         background: "#F3E5FF", 
         padding: "15px 20px", 
@@ -157,7 +247,7 @@ export default function ProfileSettingsPage() {
       }}>
         <div>
           <div style={{ fontSize: 14, color: "#666" }}>Username</div>
-          <div style={{ fontWeight: "bold", color: "#6A0DAD", fontSize: 16 }}>{userId}</div>
+          <div style={{ fontWeight: "bold", color: "#6A0DAD", fontSize: 16 }}>{username || userId}</div>
         </div>
         <div style={{ fontSize: 14, color: "#666", fontStyle: "italic" }}>
           (Your username cannot be changed)
@@ -351,6 +441,8 @@ export default function ProfileSettingsPage() {
               • At least 6 characters long
               <br />
               • Should not be too common or easily guessable
+              <br />
+              • Different from your current password
             </p>
           </div>
 
