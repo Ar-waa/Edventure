@@ -24,23 +24,29 @@ function Planner() {
     total: 0,
   });
 
-  const userId = "123";
   const formattedDate = date.toISOString().split("T")[0];
-  const [sparkles, setSparkles] = useState([]); // Updated state
+  const [sparkles, setSparkles] = useState([]);
 
   // Fetch all tasks once
   useEffect(() => {
-    fetchAllTasks(userId)
+    fetchAllTasks()
       .then((res) => {
-        setAllTasks(res.data);
+        console.log("All tasks response:", res.data);
+        setAllTasks(res.data.data);
         const map = {};
-        res.data.forEach((task) => {
+        res.data.data.forEach((task) => {
           if (!map[task.date]) map[task.date] = [];
           map[task.date].push(task);
         });
         setTaskMap(map);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error fetching all tasks:", err);
+        if (err.response?.status === 401) {
+          // Not logged in - redirect to login
+          window.location.href = "/login";
+        }
+      });
   }, []);
 
   // Weekly summary
@@ -66,25 +72,39 @@ function Planner() {
 
   // Fetch tasks for selected date
   useEffect(() => {
-    fetchTasksByDate(formattedDate, userId)
-      .then((res) => setTasks(res.data))
-      .catch((err) => console.error(err));
+    fetchTasksByDate(formattedDate)
+      .then((res) => {
+        console.log("Tasks for date response:", res.data);
+        setTasks(res.data.data);
+      })
+      .catch((err) => {
+        console.error("Error fetching tasks:", err);
+        if (err.response?.status === 401) {
+          // Not logged in
+          setTasks([]);
+        }
+      });
   }, [formattedDate]);
 
   // Add task
   const addTask = () => {
-    if (!taskInput.trim()) return;
+    if (!taskInput.trim()) {
+      alert("Please enter a task description");
+      return;
+    }
 
     const newTaskData = {
-      userId,
       date: formattedDate,
       text: taskInput,
       type: taskType,
     };
 
+    console.log("Adding task:", newTaskData);
+
     createTask(newTaskData)
       .then((res) => {
-        const newTask = res.data;
+        console.log("Task created response:", res.data);
+        const newTask = res.data.data;
         setTasks((prev) => [...prev, newTask]);
         setTaskInput("");
         setAllTasks((prev) => [...prev, newTask]);
@@ -95,20 +115,27 @@ function Planner() {
           return updated;
         });
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error creating task:", err);
+        if (err.response?.status === 401) {
+          alert("Please login to add tasks");
+          window.location.href = "/login";
+        } else {
+          alert("Error creating task: " + (err.response?.data?.message || err.message));
+        }
+      });
   };
 
   // Toggle completion
   const toggleTask = (taskId) => {
     toggleTaskStatus(taskId)
       .then((res) => {
-        const updatedTask = res.data;
+        const updatedTask = res.data.data;
 
         if (updatedTask.completed) {
           const sparkleId = `${taskId}-${Date.now()}`;
           setSparkles((prev) => [...prev, { taskId, sparkleId }]);
 
-          // Remove sparkle after animation
           setTimeout(() => {
             setSparkles((prev) =>
               prev.filter((s) => s.sparkleId !== sparkleId)
@@ -124,14 +151,19 @@ function Planner() {
         );
         setTaskMap((prev) => {
           const updated = { ...prev };
-          const dayTasks = updated[updatedTask.date].map((t) =>
+          const dayTasks = updated[updatedTask.date]?.map((t) =>
             t._id === taskId ? updatedTask : t
-          );
+          ) || [];
           updated[updatedTask.date] = dayTasks;
           return updated;
         });
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error toggling task:", err);
+        if (err.response?.status === 401) {
+          alert("Please login to update tasks");
+        }
+      });
   };
 
   // Task type emojis
@@ -193,6 +225,9 @@ function Planner() {
             placeholder="Add a task..."
             onChange={(e) => setTaskInput(e.target.value)}
             className="task-input"
+            onKeyPress={(e) => {
+              if (e.key === "Enter") addTask();
+            }}
           />
           <select
             value={taskType}
@@ -227,6 +262,11 @@ function Planner() {
                 ))}
             </li>
           ))}
+          {tasks.length === 0 && (
+            <li className="task-item" style={{ textAlign: "center", color: "#666", fontStyle: "italic" }}>
+              No tasks for this date. Add one above!
+            </li>
+          )}
         </ul>
       </div>
     </div>
