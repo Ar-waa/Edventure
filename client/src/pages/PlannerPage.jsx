@@ -1,9 +1,16 @@
 import Planner from "../components/Planner";
 
 export default function PlannerPage() {
-    return (
-        <div style={{ maxWidth: 900, margin: "auto", padding: 20 }}>
-        <Planner />
-        </div>
-    );
+  return (
+    <div
+      style={{
+        width: "100%",                           // full width
+        minHeight: "calc(100vh - 70px)",        // full height minus navbar
+        // padding: 20,                             // optional inner space
+        boxSizing: "border-box",                 // include padding in width
+      }}
+    >
+      <Planner />
+    </div>
+  );
 }

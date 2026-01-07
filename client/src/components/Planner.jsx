@@ -10,43 +10,56 @@ import {
   toggleTaskStatus,
 } from "../Api/Planner";
 
-function Planner() {
+function Planner({ updateUpcomingTasks }) { // <-- receive prop from App.jsx
   const [date, setDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
   const [taskInput, setTaskInput] = useState("");
   const [taskType, setTaskType] = useState("exam");
 
   const [allTasks, setAllTasks] = useState([]);
-  const [taskMap, setTaskMap] = useState({}); // map of date -> tasks
+  const [taskMap, setTaskMap] = useState({});
   const [weeklySummary, setWeeklySummary] = useState({
     finished: 0,
     unfinished: 0,
     total: 0,
   });
 
-  const userId = "123";
+  // Use local date instead of toISOString (fixes today date showing wrong)
+  const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 
-  // Format selected date as YYYY-MM-DD
-  const formattedDate = date.toISOString().split("T")[0];
+  const [sparkles, setSparkles] = useState([]);
 
   // Fetch all tasks once
   useEffect(() => {
-    fetchAllTasks(userId)
+    fetchAllTasks()
       .then((res) => {
-        setAllTasks(res.data);
-
-        // Build task map for faster lookup per date
+        setAllTasks(res.data.data);
         const map = {};
-        res.data.forEach((task) => {
+        res.data.data.forEach((task) => {
           if (!map[task.date]) map[task.date] = [];
           map[task.date].push(task);
         });
         setTaskMap(map);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error fetching all tasks:", err);
+        if (err.response?.status === 401) {
+          window.location.href = "/login";
+        }
+      });
   }, []);
 
-  // Compute weekly summary
+  // Rebuild taskMap automatically from allTasks
+  useEffect(() => {
+    const map = {};
+    allTasks.forEach((task) => {
+      if (!map[task.date]) map[task.date] = [];
+      map[task.date].push(task);
+    });
+    setTaskMap(map);
+  }, [allTasks]);
+
+  // Weekly summary
   useEffect(() => {
     if (allTasks.length > 0) {
       const oneWeekAgo = new Date();
@@ -69,17 +82,26 @@ function Planner() {
 
   // Fetch tasks for selected date
   useEffect(() => {
-    fetchTasksByDate(formattedDate, userId)
-      .then((res) => setTasks(res.data))
-      .catch((err) => console.error(err));
+    fetchTasksByDate(formattedDate)
+      .then((res) => {
+        setTasks(res.data.data);
+      })
+      .catch((err) => {
+        console.error("Error fetching tasks:", err);
+        if (err.response?.status === 401) {
+          setTasks([]);
+        }
+      });
   }, [formattedDate]);
 
-  // Add new task
+  // Add task
   const addTask = () => {
-    if (!taskInput.trim()) return;
+    if (!taskInput.trim()) {
+      alert("Please enter a task description");
+      return;
+    }
 
     const newTaskData = {
-      userId,
       date: formattedDate,
       text: taskInput,
       type: taskType,
@@ -87,35 +109,40 @@ function Planner() {
 
     createTask(newTaskData)
       .then((res) => {
-        const newTask = res.data;
+        const newTask = res.data.data;
         setTasks((prev) => [...prev, newTask]);
+        setAllTasks((prev) => [...prev, newTask]);
         setTaskInput("");
 
-        // Update allTasks and taskMap
-        setAllTasks((prev) => [...prev, newTask]);
-        setTaskMap((prev) => {
-          const updated = { ...prev };
-          if (!updated[formattedDate]) updated[formattedDate] = [];
-          updated[formattedDate].push(newTask);
-          return updated;
-        });
+        if (updateUpcomingTasks) updateUpcomingTasks(); // <-- update notifications
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error creating task:", err);
+        if (err.response?.status === 401) {
+          alert("Please login to add tasks");
+          window.location.href = "/login";
+        } else {
+          alert("Error creating task: " + (err.response?.data?.message || err.message));
+        }
+      });
   };
 
   // Toggle completion
   const toggleTask = (taskId) => {
     toggleTaskStatus(taskId)
       .then((res) => {
-        const updatedTask = res.data;
-        setTasks((prev) =>
-          prev.map((t) => (t._id === taskId ? updatedTask : t))
-        );
+        const updatedTask = res.data.data;
 
-        setAllTasks((prev) =>
-          prev.map((t) => (t._id === taskId ? updatedTask : t))
-        );
+        if (updatedTask.completed) {
+          const sparkleId = `${taskId}-${Date.now()}`;
+          setSparkles((prev) => [...prev, { taskId, sparkleId }]);
+          setTimeout(() => {
+            setSparkles((prev) => prev.filter((s) => s.sparkleId !== sparkleId));
+          }, 800);
+        }
 
+        setTasks((prev) => prev.map((t) => (t._id === taskId ? updatedTask : t)));
+        setAllTasks((prev) => prev.map((t) => (t._id === taskId ? updatedTask : t)));
         setTaskMap((prev) => {
           const updated = { ...prev };
           const dayTasks = updated[updatedTask.date].map((t) =>
@@ -124,85 +151,108 @@ function Planner() {
           updated[updatedTask.date] = dayTasks;
           return updated;
         });
+
+        if (updateUpcomingTasks) updateUpcomingTasks(); // <-- update notifications
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error("Error toggling task:", err);
+        if (err.response?.status === 401) {
+          alert("Please login to update tasks");
+        }
+      });
+  };
+
+  const taskEmoji = {
+    exam: "📚",
+    assignment: "📝",
+    quiz: "🧪",
+    homework: "🏠",
   };
 
   return (
     <div className="planner-container">
-      {/* Header with title + dashboard icon */}
-      <div className="planner-header">
-        <h1 className="planner-title"> Calendar Planner</h1>
-        <div className="summary-icon">
-          📜
-          <div className="tooltip">
-            <p>Finished tasks: {weeklySummary.finished}</p>
-            <p>Unfinished tasks: {weeklySummary.unfinished}</p>
-            <p>Total tasks: {weeklySummary.total}</p>
-          </div>
-        </div>
+      {/* Sidebar */}
+      <div className="sidebar">
+        <h2>Edventure Stats</h2>
+        <div className="badge">🏆 XP Completed: {weeklySummary.finished * 10}</div>
+        <div className="badge">⭐ Finished: {weeklySummary.finished}</div>
+        <div className="badge">⚡ Unfinished: {weeklySummary.unfinished}</div>
+        <div className="badge">🎖 Total Tasks: {weeklySummary.total}</div>
       </div>
 
-      {/* Calendar */}
-      <Calendar
-        onChange={setDate}
-        value={date}
-        className="planner-calendar"
-        tileContent={({ date }) => {
-          const dayStr = date.toISOString().split("T")[0];
-          const dayTasks = taskMap[dayStr] || [];
+      {/* Main Calendar */}
+      <div className="calendar-section">
+        <h1 className="planner-title">🪐 Edventure Calendar</h1>
 
-          return (
-            <div className="calendar-dots">
-              {dayTasks.map((task, idx) => (
-                <span key={idx} className={`dot ${task.type}`}></span>
-              ))}
-            </div>
-          );
-        }}
-      />
+        <Calendar
+          onChange={setDate}
+          value={date}
+          className="planner-calendar"
+          tileContent={({ date }) => {
+            const dayStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+            const dayTasks = taskMap[dayStr] || [];
 
-      <p className="selected-date">Selected date: {formattedDate}</p>
-
-      <div className="task-input-container">
-        <input
-          type="text"
-          value={taskInput}
-          placeholder="Add a task"
-          onChange={(e) => setTaskInput(e.target.value)}
-          className="task-input"
+            return (
+              <div className="calendar-tile-container">
+                {dayTasks.map((task, idx) => (
+                  <span key={idx} className={`task-icon ${task.type}`}>
+                    {taskEmoji[task.type]}
+                  </span>
+                ))}
+                <div className="xp-tooltip">
+                  {dayTasks.length > 0 &&
+                    `You earned ${dayTasks.filter((t) => t.completed).length * 10} XP today!`}
+                </div>
+              </div>
+            );
+          }}
         />
 
-        <select
-          value={taskType}
-          onChange={(e) => setTaskType(e.target.value)}
-          style={{ padding: 10, marginRight: 5 }}
-        >
-          <option value="exam">Exam</option>
-          <option value="assignment">Assignment</option>
-          <option value="quiz">Quiz</option>
-          <option value="homework">Homework</option>
-        </select>
+        <p className="selected-date">Selected date: {formattedDate}</p>
 
-        <button onClick={addTask} className="add-task-btn">
-          Add
-        </button>
-      </div>
-
-      <ul className="task-list">
-        {tasks.map((task) => (
-          <li
-            key={task._id}
-            className={`task-item ${task.completed ? "completed" : ""}`}
-            onClick={() => toggleTask(task._id)}
+        <div className="task-input-container">
+          <input
+            type="text"
+            value={taskInput}
+            placeholder="Add a task..."
+            onChange={(e) => setTaskInput(e.target.value)}
+            className="task-input"
+            onKeyPress={(e) => { if (e.key === "Enter") addTask(); }}
+          />
+          <select
+            value={taskType}
+            onChange={(e) => setTaskType(e.target.value)}
+            className="task-select"
           >
-            <span className={`task-tag ${task.type}`}>
-              {task.type.toUpperCase()}
-            </span>
-            {task.text}
-          </li>
-        ))}
-      </ul>
+            <option value="exam">Exam</option>
+            <option value="assignment">Assignment</option>
+            <option value="quiz">Quiz</option>
+            <option value="homework">Homework</option>
+          </select>
+          <button onClick={addTask} className="add-task-btn">Add</button>
+        </div>
+
+        <ul className="task-list">
+          {tasks.map((task) => (
+            <li
+              key={task._id}
+              className={`task-item ${task.completed ? "completed" : ""}`}
+              onClick={() => toggleTask(task._id)}
+            >
+              <span className="task-emoji">{taskEmoji[task.type]}</span>
+              {task.text}
+              {sparkles.filter((s) => s.taskId === task._id).map((s) => (
+                <span key={s.sparkleId} className="sparkle"></span>
+              ))}
+            </li>
+          ))}
+          {tasks.length === 0 && (
+            <li className="task-item" style={{ textAlign: "center", color: "#666", fontStyle: "italic" }}>
+              No tasks for this date. Add one above!
+            </li>
+          )}
+        </ul>
+      </div>
     </div>
   );
 }
