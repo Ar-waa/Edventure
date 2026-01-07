@@ -4,12 +4,27 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-ro
 import FlashcardsPage from "./pages/FlashcardsPage";
 import PlannerPage from "./pages/PlannerPage";
 import Milestones from "./pages/milestonePage";
+import QuizPage from "./pages/quizPage";
 import ProfilePage from "./pages/ProfilePageDB";
 import ProfileSettingsPage from "./pages/ProfileSettingsPage";
 import TimerPage from "./pages/TimerPage";
 import LoginPage from "./pages/LoginPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { fetchAllTasks } from "./Api/Planner";
+
+// 1. Create a wrapper for pages that need the Navbar
+const NavLayout = ({ children }) => (
+  <>
+    <nav style={{ padding: 20, background: "#6A0DAD", display: "flex", gap: "20px" }}>
+      <Link to="/" style={{ color: "#fff" }}>Flashcards</Link>
+      <Link to="/planner" style={{ color: "#fff" }}>Planner</Link>
+      <Link to="/milestones" style={{ color: "#fff" }}>Milestones</Link>
+      <Link to="/quiz" style={{ color: "#fff", marginLeft: "auto" }}>Go to Quiz</Link>
+    </nav>
+    {children}
+  </>
+);
+
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -198,87 +213,59 @@ function App() {
 
   return (
     <Router>
-      {/* Navbar - only show when authenticated */}
-      {isAuthenticated && (
-        <nav className="navbar">
-          <Link to="/">Flashcards</Link>
-          <Link to="/planner">Planner</Link>
-          <Link to="/milestones">Milestones</Link>
-          <Link to="/timer" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <TimerIcon />
-            Timer
-          </Link>
-          <Link to="/profile" style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <UserIcon />
-            Profile
-          </Link>
-          <NotificationBell />
-          <button
-            onClick={handleLogout}
-            style={{
-              marginLeft: "auto",
-              background: "transparent",
-              border: "none",
-              color: "white",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "8px 12px",
-              borderRadius: 4,
-            }}
-          >
-            Logout
-          </button>
-        </nav>
-      )}
+{/* Navbar only shows if authenticated AND we aren't on a special layout page */}
+{isAuthenticated && (
+  <nav className="navbar">
+    <Link to="/">Flashcards</Link>
+    <Link to="/planner">Planner</Link>
+    <Link to="/milestones">Milestones</Link>
+    <Link to="/timer" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+      <TimerIcon /> Timer
+    </Link>
+    <Link to="/profile" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+      <UserIcon /> Profile
+    </Link>
+    <NotificationBell />
+    <button onClick={handleLogout} className="logout-btn"> Logout </button>
+  </nav>
+)}
 
-      <div className="page-content">
-        <Routes>
-          {/* Public route */}
-          <Route path="/login" element={
-            <LoginPage 
-              setIsAuthenticated={setIsAuthenticated} 
-              setUserId={setUserId} 
-            />
-          } />
-          
-          {/* Protected routes */}
-          <Route path="/" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <FlashcardsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/planner" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <PlannerPage updateUpcomingTasks={updateUpcomingTasks} />
-            </ProtectedRoute>
-          } />
-          <Route path="/milestones" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <Milestones />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <ProfilePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/profile/settings" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <ProfileSettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/timer" element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <TimerPage />
-            </ProtectedRoute>
-          } />
-          
-          {/* Redirect */}
-          <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
-        </Routes>
-      </div>
+<div className="page-content">
+  <Routes>
+    {/* Public route */}
+    <Route path="/login" element={
+      <LoginPage setIsAuthenticated={setIsAuthenticated} setUserId={setUserId} />
+    } />
+    
+    {/* Protected routes */}
+    <Route path="/" element={
+      <ProtectedRoute isAuthenticated={isAuthenticated}>
+        <FlashcardsPage />
+      </ProtectedRoute>
+    } />
+    <Route path="/planner" element={
+      <ProtectedRoute isAuthenticated={isAuthenticated}>
+        <PlannerPage updateUpcomingTasks={updateUpcomingTasks} />
+      </ProtectedRoute>
+    } />
+    <Route path="/milestones" element={
+      <ProtectedRoute isAuthenticated={isAuthenticated}>
+        <Milestones />
+      </ProtectedRoute>
+    } />
+    
+    {/* New Quiz Page - Note we DON'T use NavLayout here to keep it full screen */}
+    <Route path="/quiz" element={
+      <ProtectedRoute isAuthenticated={isAuthenticated}>
+        <QuizPage />
+      </ProtectedRoute>
+    } />
+
+    {/* Fallback */}
+    <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+  </Routes>
+</div>      
+      
     </Router>
   );
 }

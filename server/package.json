@@ -29,6 +29,7 @@
     "multer": "^2.0.2",
     "openai": "^6.15.0",
     "pdf-parse": "^2.4.5",
+    "react-router-dom": "^7.11.0",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {

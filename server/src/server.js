@@ -1,10 +1,10 @@
-import { serverPort, mongodbURL } from './secret.js';
+import { serverPort, mongodbURL, API } from './secret.js';
 import mongoose from "mongoose";
 import express from "express";
+import cors from "cors"
 import morgan from "morgan";
 import createHttpError from "http-errors";
 import rateLimit from "express-rate-limit";
-import cors from "cors"
 import session from "express-session";
 import MongoStore from "connect-mongo";
 
@@ -13,6 +13,7 @@ import authRouter from "./routers/authRouter.js";
 import plannerRouter from "./routers/plannerRouter.js"; 
 import flashcardRouter from "./routers/flashcardRouter.js";
 import milestoneRouter from "./routers/milestoneRouter.js";
+import quizRouter from "./routers/quizRouter.js";
 import profileRouter from "./routers/profileRouter.js";
 import sessionRouter from "./routers/sessionRouter.js";
 
@@ -50,7 +51,12 @@ const rateLimiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests. Try again later',
 });
-app.use(rateLimiter);
+//const rateLimiter = rateLimit({
+  //  windowMs: 1*60*1000,
+    //max: 100,
+    //message: 'Too many requests. Try again later',
+//});
+//app.use(rateLimiter);
 
 // Session configuration
 app.use(
@@ -76,6 +82,10 @@ app.use('/api', authRouter); // Handles: /api/check-auth, /api/login, /api/regis
 app.use('/api/flashcards', flashcardRouter);
 app.use("/api/planner", plannerRouter);
 app.use("/api/milestones", milestoneRouter);
+app.use("/api/quiz", quizRouter);
+
+
+//server error handling
 app.use("/api/profile", profileRouter);
 app.use('/api/session', sessionRouter);
 

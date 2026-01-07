@@ -1,18 +1,21 @@
 import Milestone from "../models/milestoneModel.js";
-import mongoose from "mongoose";
+//import mongoose from "mongoose";
 
 export default class MilestoneController {
   async createMilestone(req, res) {
     try {
-      const userId = req.params.userId;
+      const { userId } = req.params;
+    
+      const existing = await Milestone.findOne({ userId });
+      if (existing) return res.status(200).json(existing);
 
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ error: "Invalid userId" });
-      }
+      const milestone = new Milestone({ 
+        userId: userId, 
+        totalXp: 0,
+      });
 
-      const milestone = new Milestone({ userId: mongoose.Types.ObjectId(userId) });
       await milestone.save();
-      res.status(201).json({ message: "Milestone created", milestone });
+      res.status(201).json(milestone);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -22,14 +25,14 @@ export default class MilestoneController {
     try {
       const userId = req.params.userId;
 
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ error: "Invalid userId" });
-      }
-
       const { todayMinutes, weekMinutes, monthMinutes, streakDays } = req.body;
 
-      const milestone = await Milestone.findOne({ userId: mongoose.Types.ObjectId(userId) });
-      if (!milestone) throw new Error("Milestone not found");
+      // FIX: Use findOne to get the EXISTING data from the database
+      const milestone = await Milestone.findOne({ userId: userId });
+      
+      if (!milestone) {
+          return res.status(404).json({ error: "Milestone not found for this user" });
+      }
 
       const achievements = this.calculateAchievements({ todayMinutes, weekMinutes, monthMinutes, streakDays });
 
@@ -38,7 +41,9 @@ export default class MilestoneController {
       for (const period of ["daily", "weekly", "monthly"]) {
         for (const key in achievements[period]) {
           const current = milestone[period][key];
-          if (achievements[period][key] && !current.unlocked) {
+          
+          // Check if AI/Logic says achievement is reached AND it's not already unlocked
+          if (achievements[period][key] && current && !current.unlocked) {
             current.unlocked = true;
             xpGained += current.xp;
           }
@@ -46,6 +51,12 @@ export default class MilestoneController {
       }
 
       milestone.totalXp += xpGained;
+      
+      // Tell Mongoose that nested objects were modified
+      milestone.markModified('daily');
+      milestone.markModified('weekly');
+      milestone.markModified('monthly');
+      
       await milestone.save();
 
       res.status(200).json({ message: "Milestones updated", xpGained, totalXp: milestone.totalXp });
@@ -84,11 +95,10 @@ export default class MilestoneController {
     try {
       const userId = req.params.userId;
 
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ error: "Invalid userId" });
+      const milestone = await Milestone.findOne({ userId: userId });
+      if (!milestone) {
+        return res.status(404).json({ message: "No milestones found for this user." });
       }
-
-      const milestone = await Milestone.findOne({ userId: mongoose.Types.ObjectId(userId) });
       res.status(200).json(milestone);
     } catch (err) {
       res.status(500).json({ error: err.message });
